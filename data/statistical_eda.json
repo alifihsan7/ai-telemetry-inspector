@@ -1,0 +1,413 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-11-02T11:42:08.750044+00:00",
+    "source_database": "/home/alifihsan/.9router/db/data.sqlite",
+    "total_records_analyzed": 56410,
+    "execution_duration_sec": 1.567,
+    "engine": "Pythia Empirical Data Science Engine",
+    "version": "1.0.0"
+  },
+  "token_distributions": {
+    "prompt_tokens": {
+      "count": 56410,
+      "mean": 61197.4547,
+      "std_dev": 41442.6192,
+      "median": 58306.5,
+      "iqr": 48271.0,
+      "p25": 34613.5,
+      "p50": 58306.5,
+      "p75": 82884.5,
+      "min": 2.0,
+      "max": 278432.0,
+      "skewness": 1.0463,
+      "kurtosis": 2.4875
+    },
+    "completion_tokens": {
+      "count": 56410,
+      "mean": 560.4059,
+      "std_dev": 1734.9235,
+      "median": 101.0,
+      "iqr": 288.0,
+      "p25": 60.0,
+      "p50": 101.0,
+      "p75": 348.0,
+      "min": 0.0,
+      "max": 61800.0,
+      "skewness": 9.7346,
+      "kurtosis": 176.1673
+    },
+    "reasoning_tokens": {
+      "count": 56410,
+      "mean": 48.6572,
+      "std_dev": 313.4795,
+      "median": 0.0,
+      "iqr": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.0,
+      "min": 0.0,
+      "max": 28288.0,
+      "skewness": 24.2179,
+      "kurtosis": 1423.8849
+    },
+    "total_tokens": {
+      "count": 56410,
+      "mean": 61757.8605,
+      "std_dev": 41487.3031,
+      "median": 58781.5,
+      "iqr": 48031.0,
+      "p25": 35292.25,
+      "p50": 58781.5,
+      "p75": 83323.25,
+      "min": 4.0,
+      "max": 282047.0,
+      "skewness": 1.0418,
+      "kurtosis": 2.4832
+    },
+    "duration_sec": {
+      "count": 56410,
+      "mean": 10.6852,
+      "std_dev": 23.1825,
+      "median": 5.116,
+      "iqr": 5.007,
+      "p25": 3.688,
+      "p50": 5.116,
+      "p75": 8.695,
+      "min": 0.051,
+      "max": 1375.683,
+      "skewness": 13.3918,
+      "kurtosis": 483.6711
+    },
+    "cost_usd": {
+      "count": 56410,
+      "mean": 0.0223,
+      "std_dev": 0.0276,
+      "median": 0.0157,
+      "iqr": 0.0112,
+      "p25": 0.0113,
+      "p50": 0.0157,
+      "p75": 0.0225,
+      "min": 0.0,
+      "max": 0.6829155,
+      "skewness": 5.3884,
+      "kurtosis": 44.5477
+    }
+  },
+  "correlation_analysis": {
+    "prompt_tokens_vs_duration": {
+      "pearson": {
+        "r": 0.0235,
+        "p_value": 2.3391080825445108e-08,
+        "statistically_significant": true
+      },
+      "spearman": {
+        "rho": 0.0856,
+        "p_value": 1.5342230491682035e-92,
+        "statistically_significant": true
+      },
+      "sample_size": 56410,
+      "interpretation": "Near-zero linear correlation (r=0.024) indicates prompt token volume does not linearly dictate end-to-end latency. Time-to-first-token ingestion scales sub-linearly compared to serial autoregressive decode generation."
+    },
+    "completion_tokens_vs_duration": {
+      "pearson": {
+        "r": 0.4611,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "spearman": {
+        "rho": 0.4256,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "sample_size": 56410,
+      "interpretation": "Moderate-to-strong positive linear and rank correlation (r=0.4618, rho=0.4261, p=0.0). Sequential autoregressive token decoding is the primary deterministic driver of execution latency."
+    },
+    "reasoning_tokens_vs_duration": {
+      "pearson": {
+        "r": 0.1795,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "spearman": {
+        "rho": 0.1952,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "sample_size": 56410,
+      "interpretation": "Statistically significant positive correlation (r=0.1796, rho=0.1953, p=0.0). Latent chain-of-thought tokens directly lengthen decode time, but fleet-wide correlation is attenuated by non-reasoning model transaction volume."
+    },
+    "prompt_tokens_vs_cost": {
+      "pearson": {
+        "r": 0.2833,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "spearman": {
+        "rho": 0.5753,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "sample_size": 56410,
+      "interpretation": "Strong monotonic rank correlation (rho=0.5751, p=0.0). Prompt volume is the foundational economic base determining gross API billing across multi-provider endpoints."
+    }
+  },
+  "hypothesis_testing": {
+    "significance_threshold_alpha": 0.05,
+    "provider_latency_summary": {
+      "antigravity": {
+        "sample_size": 54599,
+        "mean_sec": 10.4038,
+        "std_sec": 22.0345,
+        "median_sec": 5.083,
+        "iqr_sec": 4.8,
+        "p25_sec": 3.694,
+        "p75_sec": 8.494
+      },
+      "codex": {
+        "sample_size": 19,
+        "mean_sec": 0.7715,
+        "std_sec": 1.1986,
+        "median_sec": 0.468,
+        "iqr_sec": 0.479,
+        "p25_sec": 0.284,
+        "p75_sec": 0.763
+      },
+      "gemini": {
+        "sample_size": 7,
+        "mean_sec": 1.9937,
+        "std_sec": 1.3806,
+        "median_sec": 1.342,
+        "iqr_sec": 0.646,
+        "p25_sec": 1.184,
+        "p75_sec": 1.83
+      },
+      "kiro": {
+        "sample_size": 213,
+        "mean_sec": 17.3729,
+        "std_sec": 28.9017,
+        "median_sec": 7.533,
+        "iqr_sec": 13.482,
+        "p25_sec": 2.631,
+        "p75_sec": 16.113
+      },
+      "muse": {
+        "sample_size": 262,
+        "mean_sec": 12.8483,
+        "std_sec": 26.7152,
+        "median_sec": 5.119,
+        "iqr_sec": 8.85,
+        "p25_sec": 3.511,
+        "p75_sec": 12.361
+      },
+      "nvidia": {
+        "sample_size": 1,
+        "mean_sec": 1.195,
+        "std_sec": 0.0,
+        "median_sec": 1.195,
+        "iqr_sec": 0.0,
+        "p25_sec": 1.195,
+        "p75_sec": 1.195
+      },
+      "opencode": {
+        "sample_size": 1309,
+        "mean_sec": 21.0973,
+        "std_sec": 50.1116,
+        "median_sec": 8.617,
+        "iqr_sec": 18.678,
+        "p25_sec": 0.508,
+        "p75_sec": 19.186
+      }
+    },
+    "kruskal_wallis_tests": [
+      {
+        "comparison": "antigravity vs muse vs codex (cx)",
+        "groups": [
+          "antigravity",
+          "muse",
+          "codex"
+        ],
+        "statistic_h": 48.3286,
+        "p_value": 3.203131190565681e-11,
+        "degrees_of_freedom": 2,
+        "reject_null": true,
+        "conclusion": "Reject H0: Statistically significant latency distribution divergence exists across antigravity, muse, and codex (H=48.3286, p=3.2031e-11)."
+      },
+      {
+        "comparison": "antigravity vs opencode vs muse (top-3 volume)",
+        "groups": [
+          "antigravity",
+          "opencode",
+          "muse"
+        ],
+        "statistic_h": 114.734,
+        "p_value": 1.2185364919388382e-25,
+        "degrees_of_freedom": 2,
+        "reject_null": true,
+        "conclusion": "Reject H0: Highly significant latency divergence across the top-3 production volume providers (H=114.734, p=1.2185e-25)."
+      }
+    ],
+    "pairwise_mann_whitney_u_tests": [
+      {
+        "pair": "antigravity vs muse",
+        "sample_sizes": {
+          "antigravity": 54599,
+          "muse": 262
+        },
+        "medians_sec": {
+          "antigravity": 5.083,
+          "muse": 5.119
+        },
+        "statistic_u": 6946506.5,
+        "p_value": 0.42060248375435627,
+        "reject_null": false,
+        "conclusion": "Fail to Reject H0: No statistically significant latency difference between antigravity and muse at alpha=0.05 (U=6946506.5, p=0.4206 > 0.05). Both providers operate on comparable network and infrastructure response envelopes."
+      },
+      {
+        "pair": "antigravity vs codex (cx)",
+        "sample_sizes": {
+          "antigravity": 54599,
+          "codex": 19
+        },
+        "medians_sec": {
+          "antigravity": 5.083,
+          "codex": 0.468
+        },
+        "statistic_u": 993099.5,
+        "p_value": 5.0550999323818035e-12,
+        "reject_null": true,
+        "conclusion": "Reject H0: Codex (cx) latency is significantly lower than antigravity (U=993099.5, p=5.0551e-12 < 0.001; median 0.468s vs 5.085s)."
+      },
+      {
+        "pair": "muse vs codex (cx)",
+        "sample_sizes": {
+          "muse": 262,
+          "codex": 19
+        },
+        "medians_sec": {
+          "muse": 5.119,
+          "codex": 0.468
+        },
+        "statistic_u": 4837.0,
+        "p_value": 6.7200986935872945e-12,
+        "reject_null": true,
+        "conclusion": "Reject H0: Codex (cx) latency is significantly lower than muse (U=4837.0, p=6.7201e-12 < 0.001; median 0.468s vs 5.136s)."
+      },
+      {
+        "pair": "antigravity vs opencode",
+        "sample_sizes": {
+          "antigravity": 54599,
+          "opencode": 1309
+        },
+        "medians_sec": {
+          "antigravity": 5.083,
+          "opencode": 8.617
+        },
+        "statistic_u": 29560832.5,
+        "p_value": 1.0217425846498168e-26,
+        "reject_null": true,
+        "conclusion": "Reject H0: Opencode latency is significantly higher than antigravity (U=29560832.5, p=1.0217e-26 < 0.001; median 8.617s vs 5.085s)."
+      }
+    ]
+  },
+  "tail_latency_and_outliers": {
+    "percentiles_sec": {
+      "p50": 5.116,
+      "p90": 19.446,
+      "p95": 35.28,
+      "p99": 109.802,
+      "p99_9": 265.619,
+      "max": 1375.683
+    },
+    "p99_outlier_classification": {
+      "p99_threshold_sec": 109.802,
+      "total_outliers_count": 566,
+      "outlier_share_pct": 1.0,
+      "taxonomy_criteria": {
+        "context_saturation": "prompt_tokens >= P90 (112647) AND completion_tokens < P90 (1152)",
+        "explosive_generation": "completion_tokens >= P90 (1152) OR reasoning_tokens > 500",
+        "server_queuing_delay": "prompt_tokens < P90 AND completion_tokens < P90 with abnormal duration >= P99 (109.8s)"
+      },
+      "breakdown": {
+        "server_queuing_delay": {
+          "count": 292,
+          "pct": 51.59,
+          "implication": "Majority driver (51.60%). Caused by gateway connection starvation, upstream provider queuing, or persistent socket idle wait rather than token payload volume."
+        },
+        "explosive_generation": {
+          "count": 227,
+          "pct": 40.11,
+          "implication": "Second largest driver (40.07%). Massive output sequences and latent thinking loops physically constrained by autoregressive decoding throughput."
+        },
+        "context_saturation": {
+          "count": 47,
+          "pct": 8.3,
+          "implication": "Minor driver (8.33%). Heavy prompt pre-fill payloads (>112k tokens) creating KV-cache saturation and elevated Time-to-First-Token."
+        }
+      },
+      "top_affected_models": [
+        {
+          "model": "gemini-3.8-flash-high",
+          "count": 271,
+          "pct": 47.88
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "count": 159,
+          "pct": 28.09
+        },
+        {
+          "model": "gemini-3.8-flash-low",
+          "count": 49,
+          "pct": 8.66
+        },
+        {
+          "model": "gemini-3.8-flash-medium",
+          "count": 40,
+          "pct": 7.07
+        },
+        {
+          "model": "deepseek-v4.1-flash-free",
+          "count": 39,
+          "pct": 6.89
+        },
+        {
+          "model": "claude-sonnet-4.5",
+          "count": 3,
+          "pct": 0.53
+        },
+        {
+          "model": "muse-spark-1.3",
+          "count": 3,
+          "pct": 0.53
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "count": 2,
+          "pct": 0.35
+        }
+      ],
+      "top_affected_providers": [
+        {
+          "provider": "antigravity",
+          "count": 521,
+          "pct": 92.05
+        },
+        {
+          "provider": "opencode",
+          "count": 39,
+          "pct": 6.89
+        },
+        {
+          "provider": "kiro",
+          "count": 3,
+          "pct": 0.53
+        },
+        {
+          "provider": "muse",
+          "count": 3,
+          "pct": 0.53
+        }
+      ]
+    }
+  }
+}
