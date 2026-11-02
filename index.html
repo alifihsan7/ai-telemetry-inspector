@@ -1677,7 +1677,7 @@
               </td>
               <td class="px-3 py-2 text-right text-zinc-200 font-semibold">${c.total_requests.toLocaleString()}</td>
               <td class="px-3 py-2 text-right text-zinc-400">${pct}%</td>
-              <td class="px-3 py-2 text-right text-emerald-400 font-bold">0.0% OK</td>
+              <td class="px-3 py-2 text-right text-emerald-400 font-bold">${c.error_rate_pct.toFixed(2)}% <span class="text-zinc-500 font-normal text-[10px]">(${c.error_rate_pct === 0 ? '100% OK' : (100 - c.error_rate_pct).toFixed(1) + '% OK'})</span></td>
             </tr>
           `;
         }).join('');
