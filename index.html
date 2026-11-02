@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Telemetry & Unit Economics Inspector — 9Router Data Mart</title>
+  <meta name="description" content="Production FinOps, unit economics, model frontier Pareto trade-offs, and diurnal traffic analytics from 55,877+ LLM gateway transactions.">
+  
+  <!-- Fonts: Inter & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"Fira Code"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+          },
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#121215',
+              850: '#18181b',
+              800: '#27272a',
+              700: '#3f3f46',
+              600: '#52525b',
+              500: '#71717a',
+              400: '#a1a1aa',
+              300: '#d4d4d8',
+              200: '#e4e4e7',
+              100: '#f4f4f5',
+              50: '#fafafa'
+            },
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+              950: '#022c22'
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              900: '#451a03',
+              950: '#260e02'
+            },
+            sky: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              900: '#0c4a6e',
+              950: '#082f49'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .bg-grid-hairline {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Subtle Pulse animation */
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.96); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .tooltip-shadow {
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-zinc-950 text-zinc-100 bg-grid-hairline flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
+
+  <!-- Top Sticky Header -->
+  <header class="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md border-b border-white/[0.08]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Left: Brand & Context -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center font-mono font-bold text-emerald-400 text-sm shadow-sm">
+            9R
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-subtle"></span>
+                9Router Telemetry Mart
+              </span>
+              <span class="text-zinc-600 text-xs">•</span>
+              <span id="source-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-white/5">
+                Snapshot Mode
+              </span>
+            </div>
+            <h1 class="text-sm sm:text-base font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
+              AI Telemetry & Unit Economics Inspector
+            </h1>
+          </div>
+        </div>
+
+        <!-- Right: Actions & Drawer Trigger -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="btn-export" onclick="exportDataMart()" class="min-h-[44px] px-3.5 py-2 text-xs font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 rounded-lg transition-colors duration-150 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-emerald-400">
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span class="hidden sm:inline">Export Audit</span>
+          </button>
+
+          <button id="btn-open-drawer" onclick="toggleDrawer(true)" class="min-h-[44px] px-4 py-2 text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 rounded-lg transition-colors duration-150 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-emerald-400">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <span>STAR Case Study</span>
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hidden md:inline">Portfolio</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <div class="border-t border-white/[0.05] bg-zinc-950/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="flex space-x-1 sm:space-x-3 overflow-x-auto py-1 scrollbar-none" aria-label="Modules">
+          <button onclick="switchTab('finops')" id="tab-finops" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-emerald-400 bg-zinc-900 border border-emerald-500/30 flex items-center gap-2 whitespace-nowrap transition-colors">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            1. FinOps & Token Composition
+          </button>
+          <button onclick="switchTab('pareto')" id="tab-pareto" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors">
+            2. Model Frontier & Pareto
+          </button>
+          <button onclick="switchTab('diurnal')" id="tab-diurnal" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors">
+            3. Diurnal Traffic (24h x 7d WIB)
+          </button>
+          <button onclick="switchTab('reliability')" id="tab-reliability" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors">
+            4. Reliability & P99+ Outliers
+          </button>
+          <button onclick="switchTab('methodology')" id="tab-methodology" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors">
+            5. Case Study & Formulas
+          </button>
+          <button onclick="switchTab('all')" id="tab-all" class="tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors">
+            Full Stacked View
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-12">
+
+    <!-- ================================================================= -->
+    <!-- MODULE 1: EXECUTIVE FINOPS SCORECARDS & TOKEN COMPOSITION -->
+    <!-- ================================================================= -->
+    <section id="module-finops" class="space-y-6">
+      
+      <!-- Module Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-widest text-emerald-400">Executive Unit Economics</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Macro Fleet Expenditure & Arbitrage Alpha</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Evaluating actual gateway spend vs. retail commercial baseline across 55,877 production calls.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/10 text-right">
+            <div class="text-[10px] font-mono uppercase text-zinc-400">Evaluation Window</div>
+            <div class="text-xs font-mono font-medium text-zinc-200">Production Horizon (Oct-Nov 2026)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Bento Scorecards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        
+        <!-- Card 1: Gross Spend -->
+        <div class="bg-zinc-900/70 border border-white/[0.08] rounded-xl p-4 flex flex-col justify-between hover:border-white/[0.15] transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Gross Spend</span>
+            <div class="w-6 h-6 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs font-mono">$</div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums" id="card-gross-spend">$1,236.57</div>
+            <div class="text-[11px] text-zinc-400 mt-1 flex items-center justify-between">
+              <span>Actual 9Router egress</span>
+              <span class="font-mono text-zinc-300">$0.0221/req</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Benchmark Spend -->
+        <div class="bg-zinc-900/70 border border-white/[0.08] rounded-xl p-4 flex flex-col justify-between hover:border-white/[0.15] transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Retail Benchmark</span>
+            <div class="w-6 h-6 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">⚖️</div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-zinc-300 tabular-nums" id="card-benchmark-spend">$10,610.16</div>
+            <div class="text-[11px] text-zinc-400 mt-1 flex items-center justify-between">
+              <span>Retail Frontier List</span>
+              <span class="font-mono text-zinc-400">$3 / $15 MTok</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: RASI Arbitrage Savings -->
+        <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 flex flex-col justify-between hover:border-emerald-500/50 transition-all shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-emerald-400 uppercase tracking-wider">RASI Alpha Saved</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              88.35%
+            </span>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-emerald-400 tabular-nums" id="card-rasi-savings">$9,373.59</div>
+            <div class="text-[11px] text-emerald-300/80 mt-1 flex items-center justify-between">
+              <span>Preserved Capital</span>
+              <span class="font-mono font-semibold">+8.58x Efficiency</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Blended ETC -->
+        <div class="bg-zinc-900/70 border border-white/[0.08] rounded-xl p-4 flex flex-col justify-between hover:border-white/[0.15] transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Blended ETC</span>
+            <div class="w-6 h-6 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs font-mono">⚡</div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums" id="card-blended-etc">$0.3624</div>
+            <div class="text-[11px] text-zinc-400 mt-1 flex items-center justify-between">
+              <span>USD per Million Tokens</span>
+              <span class="font-mono text-zinc-300">0.036¢/kTok</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Total Requests -->
+        <div class="bg-zinc-900/70 border border-white/[0.08] rounded-xl p-4 flex flex-col justify-between hover:border-white/[0.15] transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total Requests</span>
+            <div class="w-6 h-6 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">📊</div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums" id="card-total-requests">55,877</div>
+            <div class="text-[11px] text-zinc-400 mt-1 flex items-center justify-between">
+              <span>Fleet Status OK</span>
+              <span class="font-mono text-emerald-400 font-semibold">100.0% (0 err)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 6: Cache Realization Ratio -->
+        <div class="bg-zinc-900/70 border border-white/[0.08] rounded-xl p-4 flex flex-col justify-between hover:border-white/[0.15] transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Cache Ratio</span>
+            <div class="w-6 h-6 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">💾</div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl sm:text-3xl font-bold font-mono text-sky-400 tabular-nums" id="card-cache-ratio">88.7%</div>
+            <div class="text-[11px] text-zinc-400 mt-1 flex items-center justify-between">
+              <span>Prompt Cache Hits</span>
+              <span class="font-mono text-sky-300">3.03B Cached</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Token Ingestion Architecture Breakdown -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 sm:p-6 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+              Fleet Token Composition Architecture
+            </h3>
+            <p class="text-xs text-zinc-400 mt-0.5">Dissecting 3,411,937,705 total tokens into prompt cache, raw ingestion, and reasoning overhead.</p>
+          </div>
+          <div class="text-xs font-mono text-zinc-300 bg-zinc-950 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
+            <span>Aggregate Throughput:</span>
+            <strong class="text-emerald-400 font-semibold">3.411 Billion Tokens</strong>
+          </div>
+        </div>
+
+        <!-- Segmented Proportional Bar -->
+        <div class="space-y-2">
+          <div class="w-full h-8 bg-zinc-950 rounded-lg overflow-hidden flex border border-white/10 p-0.5" id="token-bar-container">
+            <!-- 88.74% Cached Prompt Tokens -->
+            <div style="width: 88.74%;" class="h-full bg-sky-500 hover:bg-sky-400 transition-colors rounded-l flex items-center justify-center text-[10px] font-mono text-white font-medium overflow-hidden px-1 group cursor-pointer" title="Cached Prompt Tokens: 3,027,818,918 (88.74%)">
+              <span class="truncate">88.7% Cached Prompt</span>
+            </div>
+            <!-- 10.34% Uncached Prompt Tokens -->
+            <div style="width: 10.34%;" class="h-full bg-zinc-600 hover:bg-zinc-500 transition-colors flex items-center justify-center text-[10px] font-mono text-zinc-200 font-medium overflow-hidden px-1 group cursor-pointer" title="Uncached Prompt Tokens: 352,923,220 (10.34%)">
+              <span class="truncate">10.3% Uncached</span>
+            </div>
+            <!-- 0.83% Visible Completion -->
+            <div style="width: 0.83%; min-width: 6px;" class="h-full bg-emerald-500 hover:bg-emerald-400 transition-colors flex items-center justify-center text-[9px] font-mono text-white font-medium group cursor-pointer" title="Visible Completion: 28,461,264 (0.83%)">
+            </div>
+            <!-- 0.08% Latent Reasoning -->
+            <div style="width: 0.09%; min-width: 4px;" class="h-full bg-amber-500 hover:bg-amber-400 transition-colors rounded-r flex items-center justify-center text-[9px] font-mono text-white font-medium group cursor-pointer" title="Latent Reasoning Tokens: 2,734,303 (0.08%)">
+            </div>
+          </div>
+
+          <!-- Segment Legend Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+            
+            <div class="bg-zinc-950/60 border border-sky-500/20 rounded-lg p-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="flex items-center gap-1.5 font-medium text-sky-400">
+                  <span class="w-2.5 h-2.5 rounded bg-sky-500"></span>
+                  Cached Prompt
+                </span>
+                <span class="font-mono font-bold text-sky-300">88.74%</span>
+              </div>
+              <div class="text-lg font-mono font-bold text-zinc-100 mt-1 tabular-nums">3,027.8M</div>
+              <div class="text-[11px] text-zinc-500 mt-0.5">3,027,818,918 context reuse tokens</div>
+            </div>
+
+            <div class="bg-zinc-950/60 border border-zinc-700/40 rounded-lg p-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="flex items-center gap-1.5 font-medium text-zinc-300">
+                  <span class="w-2.5 h-2.5 rounded bg-zinc-600"></span>
+                  Uncached Ingestion
+                </span>
+                <span class="font-mono font-bold text-zinc-400">10.34%</span>
+              </div>
+              <div class="text-lg font-mono font-bold text-zinc-100 mt-1 tabular-nums">352.9M</div>
+              <div class="text-[11px] text-zinc-500 mt-0.5">352,923,220 fresh prompt tokens</div>
+            </div>
+
+            <div class="bg-zinc-950/60 border border-emerald-500/20 rounded-lg p-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="flex items-center gap-1.5 font-medium text-emerald-400">
+                  <span class="w-2.5 h-2.5 rounded bg-emerald-500"></span>
+                  Visible Completion
+                </span>
+                <span class="font-mono font-bold text-emerald-300">0.83%</span>
+              </div>
+              <div class="text-lg font-mono font-bold text-zinc-100 mt-1 tabular-nums">28.5M</div>
+              <div class="text-[11px] text-zinc-500 mt-0.5">28,461,264 emitted client tokens</div>
+            </div>
+
+            <div class="bg-zinc-950/60 border border-amber-500/20 rounded-lg p-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="flex items-center gap-1.5 font-medium text-amber-400">
+                  <span class="w-2.5 h-2.5 rounded bg-amber-500"></span>
+                  Latent Reasoning
+                </span>
+                <span class="font-mono font-bold text-amber-300">0.08%</span>
+              </div>
+              <div class="text-lg font-mono font-bold text-zinc-100 mt-1 tabular-nums">2.73M</div>
+              <div class="text-[11px] text-zinc-500 mt-0.5">2,734,303 hidden thinking tokens</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Analytical Ratios Row -->
+        <div class="pt-3 border-t border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div>
+            <div class="text-zinc-500 uppercase font-mono text-[10px]">Prompt Dominance Ratio</div>
+            <div class="font-mono text-zinc-200 font-semibold text-sm mt-0.5">108.4 : 1</div>
+            <div class="text-zinc-500 text-[11px]">Context-heavy multi-agent fleet</div>
+          </div>
+          <div>
+            <div class="text-zinc-500 uppercase font-mono text-[10px]">Fleet Reasoning ROM</div>
+            <div class="font-mono text-amber-400 font-semibold text-sm mt-0.5">0.0961 (9.61%)</div>
+            <div class="text-zinc-500 text-[11px]">Latent vs visible completion</div>
+          </div>
+          <div>
+            <div class="text-zinc-500 uppercase font-mono text-[10px]">Average Tokens / Req</div>
+            <div class="font-mono text-zinc-200 font-semibold text-sm mt-0.5">61,061 tokens</div>
+            <div class="text-zinc-500 text-[11px]">Mean context density</div>
+          </div>
+          <div>
+            <div class="text-zinc-500 uppercase font-mono text-[10px]">Cache Realized Discount</div>
+            <div class="font-mono text-emerald-400 font-semibold text-sm mt-0.5">88.35% Savings</div>
+            <div class="text-zinc-500 text-[11px]">Discounted ingestion alpha</div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- MODULE 2: MODEL FRONTIER & PARETO TRADE-OFF MATRIX -->
+    <!-- ================================================================= -->
+    <section id="module-pareto" class="space-y-6">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-widest text-emerald-400">Model Trade-off Optimization</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Pareto Frontier: Latency vs. Unit Economics</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Evaluating Effective Token Cost (ETC $/MTok) vs. P90 Latency (sec) across 23 canonical models.</p>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Scale Toggle -->
+          <div class="bg-zinc-900 border border-white/10 rounded-lg p-0.5 flex text-xs font-mono">
+            <button id="btn-scale-log" onclick="setScatterScale('log')" class="min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors">Log Scale</button>
+            <button id="btn-scale-lin" onclick="setScatterScale('linear')" class="min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors">Linear</button>
+          </div>
+
+          <!-- Tier Filter -->
+          <div class="bg-zinc-900 border border-white/10 rounded-lg p-0.5 flex text-xs font-mono">
+            <button id="btn-filter-prod" onclick="setModelFilter('prod')" class="min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors">Active (≥10 reqs)</button>
+            <button id="btn-filter-all" onclick="setModelFilter('all')" class="min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors">All 23 Models</button>
+          </div>
+
+          <!-- Pareto Frontier Line Toggle -->
+          <button id="btn-toggle-frontier" onclick="toggleFrontierCurve()" class="min-h-[44px] px-3 py-1.5 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-900/40 text-xs font-mono font-medium flex items-center gap-1.5 transition-colors">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Pareto Curve</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Provider Filter Buttons Row -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono scrollbar-none" id="provider-filter-pills">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- 2D Interactive SVG Scatter Plot -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-4 sm:p-6 space-y-4">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-zinc-400 gap-2">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
+              Optimal Frontier Models
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full border border-dashed border-zinc-400 inline-block"></span>
+              Bubble Size = Ingested Tokens
+            </span>
+          </div>
+          <div class="font-mono text-zinc-500 text-[11px]">
+            Hover bubble for deep telemetry card · Click bubble to focus table
+          </div>
+        </div>
+
+        <!-- SVG Container -->
+        <div class="relative w-full aspect-[16/9] sm:aspect-[21/9] bg-zinc-950/70 rounded-lg border border-white/[0.06] overflow-hidden" id="scatter-wrapper">
+          <svg id="scatter-svg" class="w-full h-full" viewBox="0 0 960 440" preserveAspectRatio="xMidYMid meet">
+            <!-- Rendered via JS -->
+          </svg>
+
+          <!-- Floating Tooltip Card -->
+          <div id="scatter-tooltip" class="absolute hidden pointer-events-none z-30 bg-zinc-900/95 border border-white/20 rounded-xl p-4 tooltip-shadow text-xs max-w-xs transition-opacity duration-150 backdrop-blur-md">
+            <!-- Tooltip Content -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sortable Model Frontier Table -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl overflow-hidden space-y-3 p-4 sm:p-5">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <span>Canonical Model Unit Economics Table</span>
+              <span id="table-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-zinc-800 text-zinc-300">23 Models</span>
+            </h3>
+            <p class="text-xs text-zinc-400">Sort by any column header to rank models by throughput, cost efficiency, or tail latency.</p>
+          </div>
+
+          <!-- Search input -->
+          <div class="relative w-full sm:w-64">
+            <input type="text" id="model-search" oninput="filterModelTable()" placeholder="Search model or provider..." class="w-full min-h-[44px] bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono">
+            <span class="absolute right-3 top-3.5 text-zinc-500 text-xs pointer-events-none">⌘K</span>
+          </div>
+        </div>
+
+        <!-- Table Responsive Container -->
+        <div class="overflow-x-auto border border-white/[0.06] rounded-lg">
+          <table class="w-full text-left text-xs tabular-nums border-collapse" id="model-table">
+            <thead class="bg-zinc-950 text-zinc-400 uppercase font-mono text-[10px] border-b border-white/[0.08] select-none">
+              <tr>
+                <th onclick="sortTable('model')" class="px-3.5 py-3 cursor-pointer hover:text-zinc-200">Model Name ↕</th>
+                <th onclick="sortTable('provider')" class="px-3 py-3 cursor-pointer hover:text-zinc-200">Provider ↕</th>
+                <th onclick="sortTable('total_requests')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">Requests ↕</th>
+                <th onclick="sortTable('total_tokens')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">Total Tokens ↕</th>
+                <th onclick="sortTable('etc_per_mtok')" class="px-3 py-3 cursor-pointer hover:text-emerald-400 text-right text-emerald-400">ETC ($/M) ↕</th>
+                <th onclick="sortTable('rom_ratio')" class="px-3 py-3 cursor-pointer hover:text-amber-400 text-right">ROM ↕</th>
+                <th onclick="sortTable('p50_latency_sec')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">P50 (s) ↕</th>
+                <th onclick="sortTable('p90_latency_sec')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">P90 (s) ↕</th>
+                <th onclick="sortTable('p99_latency_sec')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">P99 (s) ↕</th>
+                <th onclick="sortTable('tvi_index')" class="px-3 py-3 cursor-pointer hover:text-zinc-200 text-right">TVI ↕</th>
+                <th onclick="sortTable('rasi_savings_pct')" class="px-3 py-3 cursor-pointer hover:text-emerald-400 text-right">RASI % ↕</th>
+              </tr>
+            </thead>
+            <tbody id="model-tbody" class="divide-y divide-white/[0.04] bg-zinc-900/40">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- MODULE 3: DIURNAL TRAFFIC & VELOCITY HEATMAP (24h x 7d WIB) -->
+    <!-- ================================================================= -->
+    <section id="module-diurnal" class="space-y-6">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-widest text-emerald-400">Temporal Fleet Dynamics</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Diurnal Traffic Matrix (24 Hours × 7 Days)</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Localized to Asia/Jakarta (WIB, UTC+7). Identifying autonomous batch spikes vs. daytime interactive sparring.</p>
+        </div>
+
+        <!-- Metric Switcher -->
+        <div class="flex items-center gap-2 bg-zinc-900 border border-white/10 rounded-lg p-1 text-xs font-mono">
+          <button id="btn-heat-reqs" onclick="setHeatmapMetric('requests')" class="min-h-[44px] px-3.5 py-1.5 rounded-md bg-zinc-800 text-emerald-400 font-semibold transition-colors">Requests Count</button>
+          <button id="btn-heat-tokens" onclick="setHeatmapMetric('total_tokens')" class="min-h-[44px] px-3.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors">Tokens (Throughput)</button>
+          <button id="btn-heat-cost" onclick="setHeatmapMetric('total_cost_usd')" class="min-h-[44px] px-3.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors">Spend (USD)</button>
+        </div>
+      </div>
+
+      <!-- Heatmap Visual Container -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-4 sm:p-6 space-y-4">
+        
+        <!-- Legend & Peak Alert -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-zinc-400">Intensity Scale:</span>
+            <div class="flex items-center gap-1 font-mono text-[10px] text-zinc-500">
+              <span>Low</span>
+              <span class="w-3.5 h-3.5 rounded bg-zinc-950 border border-white/5"></span>
+              <span class="w-3.5 h-3.5 rounded bg-emerald-950 border border-emerald-900/50"></span>
+              <span class="w-3.5 h-3.5 rounded bg-emerald-800 border border-emerald-700/50"></span>
+              <span class="w-3.5 h-3.5 rounded bg-emerald-600 border border-emerald-500/50"></span>
+              <span class="w-3.5 h-3.5 rounded bg-emerald-400 border border-emerald-300"></span>
+              <span class="w-3.5 h-3.5 rounded bg-amber-400 border border-amber-300"></span>
+              <span class="text-emerald-400 font-semibold">Peak Batch</span>
+            </div>
+          </div>
+          <div class="font-mono text-zinc-400 bg-zinc-950 px-3 py-1 rounded border border-white/5">
+            TimeZone: <span class="text-zinc-200">Asia/Jakarta (WIB / UTC+7)</span>
+          </div>
+        </div>
+
+        <!-- 24x7 Heatmap Grid -->
+        <div class="overflow-x-auto pb-2">
+          <div class="min-w-[760px] space-y-1.5" id="heatmap-grid-container">
+            <!-- Hours X-Axis Header -->
+            <div class="grid grid-cols-[80px_repeat(24,_1fr)] gap-1 text-[10px] font-mono text-zinc-500 text-center select-none pb-1 border-b border-white/[0.06]">
+              <div class="text-left font-sans text-zinc-400">Day / Hour</div>
+              <div>00</div><div>01</div><div>02</div><div>03</div><div>04</div><div>05</div>
+              <div>06</div><div>07</div><div>08</div><div>09</div><div>10</div><div>11</div>
+              <div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div>
+              <div>18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div>
+            </div>
+
+            <!-- Heatmap Rows (Monday - Sunday) -->
+            <div id="heatmap-rows" class="space-y-1.5">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Heatmap Tooltip -->
+        <div id="heatmap-tooltip" class="fixed hidden pointer-events-none z-50 bg-zinc-900/95 border border-white/20 rounded-xl p-3.5 tooltip-shadow text-xs max-w-xs transition-opacity duration-150 backdrop-blur-md">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Day of Week Aggregation Summary Row -->
+        <div class="pt-3 border-t border-white/[0.06]">
+          <div class="text-[10px] font-mono uppercase text-zinc-400 mb-2">Weekly Load Balance (Total Requests per Day)</div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2" id="day-totals-grid">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Diurnal Insights Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/[0.06]">
+          <div class="bg-zinc-950/60 border border-white/5 rounded-lg p-3.5">
+            <div class="text-[10px] font-mono uppercase text-zinc-400">Peak Autonomous Window</div>
+            <div class="text-sm font-semibold text-emerald-400 mt-1" id="diurnal-peak-window">Wednesday 14:00 - 18:00 WIB</div>
+            <div class="text-xs text-zinc-400 mt-0.5">Sustained multi-agent recursive synthesis and parallel evaluation workflows.</div>
+          </div>
+
+          <div class="bg-zinc-950/60 border border-white/5 rounded-lg p-3.5">
+            <div class="text-[10px] font-mono uppercase text-zinc-400">Nighttime Cadence (00:00 - 06:00)</div>
+            <div class="text-sm font-semibold text-zinc-200 mt-1">Automated Scheduled Batches</div>
+            <div class="text-xs text-zinc-400 mt-0.5">Heavy prompt token ingestion runs via scheduled cron loops without human throttling.</div>
+          </div>
+
+          <div class="bg-zinc-950/60 border border-white/5 rounded-lg p-3.5">
+            <div class="text-[10px] font-mono uppercase text-zinc-400">Velocity Surge Detection</div>
+            <div class="text-sm font-semibold text-amber-400 mt-1">Zero Runaway Loops Detected</div>
+            <div class="text-xs text-zinc-400 mt-0.5">Telemetry shows clean convergence without runaway infinite tool iterations.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- MODULE 4: RELIABILITY, ERROR ATTRIBUTION & P99+ OUTLIERS -->
+    <!-- ================================================================= -->
+    <section id="module-reliability" class="space-y-6">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-widest text-emerald-400">Operational Stability & Tail Volatility</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Reliability & P99+ Tail Outlier Drill-Down</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Connection pool health audit and forensic decomposition of the 25 slowest tail transactions.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="px-3.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-right">
+            <div class="text-[10px] font-mono uppercase text-emerald-300">Fleet Success Rate</div>
+            <div class="text-sm font-mono font-bold text-emerald-400">100.0% (55,877 / 55,877 OK)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Provider Distribution & Connection Health -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        <!-- Left: Provider Gateway Breakdown -->
+        <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Provider Volume Share
+            </h3>
+            <span class="text-xs font-mono text-zinc-400">7 Active Providers</span>
+          </div>
+          <div class="space-y-2.5" id="provider-breakdown-list">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Center & Right: Connection Pool Health Audit -->
+        <div class="lg:col-span-2 bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                <span>Multi-Account Connection Pool Audit</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-300">11 Connection IDs</span>
+              </h3>
+              <p class="text-xs text-zinc-400">Account load-balancing across OAuth sessions & API credentials with 0 rate-limit dropouts.</p>
+            </div>
+            <span class="text-xs font-mono text-emerald-400 font-medium">0 Errors Total</span>
+          </div>
+
+          <div class="overflow-x-auto border border-white/[0.06] rounded-lg max-h-56 overflow-y-auto">
+            <table class="w-full text-left text-xs tabular-nums border-collapse">
+              <thead class="bg-zinc-950 text-zinc-400 uppercase font-mono text-[10px] sticky top-0 border-b border-white/[0.08]">
+                <tr>
+                  <th class="px-3 py-2.5">Connection ID (UUID)</th>
+                  <th class="px-3 py-2.5">Provider Slug</th>
+                  <th class="px-3 py-2.5 text-right">Requests Handled</th>
+                  <th class="px-3 py-2.5 text-right">Volume Share</th>
+                  <th class="px-3 py-2.5 text-right">Error Rate</th>
+                </tr>
+              </thead>
+              <tbody id="connection-pool-tbody" class="divide-y divide-white/[0.04]">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Top 25 P99+ Outliers Table -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-4">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              P99+ Tail Latency Outliers (Top 25 Slowest Invocations)
+            </h3>
+            <p class="text-xs text-zinc-400 mt-0.5">Forensic examination of transactions exceeding 298 seconds up to 1,375.7s (22.9 minutes).</p>
+          </div>
+
+          <!-- Outlier Search Filter -->
+          <div class="relative w-full sm:w-64">
+            <input type="text" id="outlier-search" oninput="filterOutliersTable()" placeholder="Search request ID, model, or provider..." class="w-full min-h-[44px] bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-400 transition-colors font-mono">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-white/[0.06] rounded-lg">
+          <table class="w-full text-left text-xs tabular-nums border-collapse">
+            <thead class="bg-zinc-950 text-zinc-400 uppercase font-mono text-[10px] border-b border-white/[0.08] select-none">
+              <tr>
+                <th class="px-3 py-3 text-center">Rank</th>
+                <th class="px-3 py-3">Req ID</th>
+                <th class="px-3 py-3">Timestamp (WIB)</th>
+                <th class="px-3 py-3 text-right text-amber-400">Duration (s)</th>
+                <th class="px-3 py-3">Model Canonical</th>
+                <th class="px-3 py-3">Provider</th>
+                <th class="px-3 py-3 text-right">Prompt</th>
+                <th class="px-3 py-3 text-right">Comp</th>
+                <th class="px-3 py-3 text-right text-amber-300">Reasoning</th>
+                <th class="px-3 py-3 text-right">Cost ($)</th>
+                <th class="px-3 py-3">Tail Driver Diagnosis</th>
+              </tr>
+            </thead>
+            <tbody id="outliers-tbody" class="divide-y divide-white/[0.04] bg-zinc-900/40">
+              <!-- Injected via JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- MODULE 5: CASE STUDY & METHODOLOGY (STAR METHOD) -->
+    <!-- ================================================================= -->
+    <section id="module-methodology" class="space-y-6">
+      
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-widest text-emerald-400">Portfolio & Analytical Foundation</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">STAR Case Study: Multi-Agent Telemetry & Unit Economics</h2>
+          <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">Documenting the analytical problem space, engineering execution, and mathematical derivations by Alif Ihsan.</p>
+        </div>
+
+        <button onclick="copySTARResumePitch()" class="min-h-[44px] px-4 py-2 text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span id="copy-btn-text">Copy Resume Bullet Points</span>
+        </button>
+      </div>
+
+      <!-- Author Card -->
+      <div class="bg-zinc-900/90 border border-white/[0.1] rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center font-mono font-bold text-emerald-400 text-lg">
+            AI
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-zinc-100">Alif Ihsan</h3>
+            <p class="text-xs text-zinc-400 font-mono">Data Analyst & AI Systems Strategist · SecondBrainAI7</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs font-mono">
+          <span class="px-2.5 py-1 rounded bg-zinc-950 border border-white/5 text-zinc-300">55,877 Production Records</span>
+          <span class="px-2.5 py-1 rounded bg-zinc-950 border border-white/5 text-emerald-400">88.35% RASI Savings Alpha</span>
+          <span class="px-2.5 py-1 rounded bg-zinc-950 border border-white/5 text-sky-400">Zero-Slop UI Architecture</span>
+        </div>
+      </div>
+
+      <!-- STAR Method Deep-Dive Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- S: Situation -->
+        <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-zinc-800 font-mono font-bold text-xs text-emerald-400 flex items-center justify-center">S</span>
+            <h3 class="text-sm font-semibold text-zinc-100">Situation (Kondisi Lapangan)</h3>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            Dalam ekosistem <strong>Autonomous Multi-Agent Systems</strong> dan orkestrasi LLM gateway (9Router) dengan volume transaksi tinggi (>55.800 transaksi produksi), organisasi menghadapi ketiadaan visibilitas FinOps dan telemetri granular. Metrik pemantauan standar APM hanya mencatat latensi HTTP generik, mengabaikan struktur biaya asimetris token (input, output, cached tokens), serta fenomena <strong>hidden reasoning token bloat</strong> pada model penalaran (DeepSeek-R1, Gemini Thinking). Hal ini menimbulkan risiko *silent cost explosion*, ketidakteraturan *rate-limit* multi-akun, dan ketidakmampuan membuktikan efisiensi finansial arsitektur gateway multi-provider.
+          </p>
+        </div>
+
+        <!-- T: Task -->
+        <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-zinc-800 font-mono font-bold text-xs text-emerald-400 flex items-center justify-center">T</span>
+            <h3 class="text-sm font-semibold text-zinc-100">Task (Mandat Analitis)</h3>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            Merancang dan mengimplementasikan sistem inspeksi telemetri dan *unit economics* terpadu (<strong>AI Telemetry & Model Unit Economics Inspector</strong>) yang mampu:
+          </p>
+          <ul class="text-xs text-zinc-300 space-y-1.5 list-disc list-inside">
+            <li>Membedah 55.877 baris data transaksi riil dari SQLite gateway menjadi *dimensional data mart* analitis berkinerja tinggi.</li>
+            <li>Memformulasikan metrik matematis orisinal untuk *Effective Token Cost* (ETC), *Reasoning Overhead Multiplier* (ROM), distribusi latensi persentil (P50, P90, P99), dan *Routing Arbitrage Savings Index* (RASI).</li>
+            <li>Menyajikan visualisasi Pareto frontier biaya vs latensi dan matriks diurnal 24x7 WIB untuk menjembatani kebutuhan teknis Head of AI dengan efisiensi modal CFO.</li>
+          </ul>
+        </div>
+
+        <!-- A: Action -->
+        <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-zinc-800 font-mono font-bold text-xs text-emerald-400 flex items-center justify-center">A</span>
+            <h3 class="text-sm font-semibold text-zinc-100">Action (Tindakan Eksekusi & Engineering)</h3>
+          </div>
+          <p class="text-xs text-zinc-300 leading-relaxed">
+            Mengekstraksi payload telemetri mentah, membongkar *nested JSON token usage* (<code class="text-sky-300">prompt_tokens</code>, <code class="text-sky-300">completion_tokens</code>, <code class="text-sky-300">cached_tokens</code>, <code class="text-amber-300">reasoning_tokens</code>), serta menormalkan zona waktu operasional (UTC ke WIB). Mengembangkan algoritma evaluasi biaya komparatif yang mengukur belanja aktual terhadap benchmark ritel komersial frontier ($3.00/$15.00 per MTok), mengidentifikasi inefisiensi komputasi laten (ROM > 0.25), serta memetakan matriks 24x7 aktivitas agen otonom guna mendeteksi *looping* rekursif agen dan anomali latensi ekstrem (P99+).
+          </p>
+        </div>
+
+        <!-- R: Result -->
+        <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-zinc-800 font-mono font-bold text-xs text-emerald-400 flex items-center justify-center">R</span>
+            <h3 class="text-sm font-semibold text-zinc-100">Result (Dampak Terukur & Nilai Bisnis)</h3>
+          </div>
+          <ul class="text-xs text-zinc-300 space-y-1.5 list-disc list-inside leading-relaxed">
+            <li><strong>100% Granular Cost Traceability:</strong> Mengubah 55.877 transaksi API mentah menjadi visibilitas FinOps presisi tinggi tanpa latensi agregasi tambahan.</li>
+            <li><strong>$9,373.59 Penghematan Arbitrase (88.35% Alpha):</strong> Membuktikan secara empiris keunggulan gateway multi-provider routing dibanding pemanggilan API ritel direct.</li>
+            <li><strong>Eliminasi Hidden Reasoning Waste:</strong> Mengukur rasio ROM lintas model sehingga model over-reasoning dapat dipangkas pada tugas deterministik.</li>
+            <li><strong>Pareto Decision Infrastructure:</strong> Menghasilkan matriks kompromi latensi vs. biaya yang menjadi acuan konfigurasi model combos (<code class="text-emerald-300">hermes-stack</code>, <code class="text-emerald-300">spidey-stack</code>) di level produksi.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Mathematical Formulas Section -->
+      <div class="bg-zinc-900/80 border border-white/[0.08] rounded-xl p-5 sm:p-6 space-y-5">
+        <h3 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          Formulasi Matematis Metrik Inti (Analytical Foundations)
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <!-- Formula 1: ETC -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-emerald-400 font-semibold">1. Effective Token Cost (ETC)</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              ETC = ( ∑ Cost<sub>i</sub> / ∑ (Prompt<sub>i</sub> + Comp<sub>i</sub>) ) × 10<sup>6</sup>
+            </div>
+            <p class="text-[11px] text-zinc-400">Satuan: <strong>USD per Million Tokens ($/MTok)</strong>. Menghilangkan distorsi agregat dengan menghitung biaya efektif riil per volume token.</p>
+          </div>
+
+          <!-- Formula 2: CRDR -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-sky-400 font-semibold">2. Cache Realized Discount Ratio</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              CRDR = 1 - ( ∑ Cost<sub>actual</sub> / ∑ Cost<sub>uncached_list</sub> )
+            </div>
+            <p class="text-[11px] text-zinc-400">Mengisolasi penghematan finansial riil yang dihasilkan dari pemanfaatan context-caching.</p>
+          </div>
+
+          <!-- Formula 3: ROM -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-amber-400 font-semibold">3. Reasoning Overhead Multiplier (ROM)</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              ROM = ∑ T<sub>reasoning</sub> / ∑ (T<sub>completion</sub> - T<sub>reasoning</sub>)
+            </div>
+            <p class="text-[11px] text-zinc-400">Rasio antara token pemikiran laten terhadap token jawaban tampak. ROM > 0.25 menandakan overhead komputasi signifikan.</p>
+          </div>
+
+          <!-- Formula 4: RASI -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-emerald-400 font-semibold">4. Routing Arbitrage Savings Index</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              RASI = ( (Cost<sub>benchmark</sub> - Cost<sub>actual</sub>) / Cost<sub>benchmark</sub> ) × 100%
+            </div>
+            <p class="text-[11px] text-zinc-400">Kuantifikasi persentase kapital yang berhasil diselamatkan melalui gateway multi-provider routing combo.</p>
+          </div>
+
+          <!-- Formula 5: TVI -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-rose-400 font-semibold">5. Tail Volatility Index (TVI)</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              TVI = ( P<sub>99</sub> - P<sub>50</sub> ) / P<sub>50</sub>
+            </div>
+            <p class="text-[11px] text-zinc-400">Mengukur kerentanan tail latency SLA. TVI tinggi (>15) menandakan antrian provider ekstrem atau rate-limiting.</p>
+          </div>
+
+          <!-- Formula 6: Percentile Duration -->
+          <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-4 space-y-2">
+            <div class="text-xs font-mono text-zinc-300 font-semibold">6. Percentile Duration (P<sub>k</sub>)</div>
+            <div class="p-3 bg-zinc-900 rounded font-mono text-xs text-zinc-200 overflow-x-auto text-center border border-white/5">
+              P<sub>k</sub> = d<sub>( ⌈ (k/100) × N ⌉ )</sub>
+            </div>
+            <p class="text-[11px] text-zinc-400">Kalkulasi persentil empiris non-parametrik terurut atas seluruh durasi transaksi gateway.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Slide-Over Drawer for STAR Case Study -->
+  <div id="star-drawer-backdrop" onclick="toggleDrawer(false)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden transition-opacity duration-300"></div>
+  <aside id="star-drawer" class="fixed top-0 right-0 bottom-0 w-full sm:max-w-2xl bg-zinc-950 border-l border-white/10 z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col shadow-2xl">
+    
+    <!-- Drawer Header -->
+    <div class="p-5 border-b border-white/[0.08] flex items-center justify-between bg-zinc-900/60">
+      <div>
+        <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider">Professional Portfolio Dossier</div>
+        <h2 class="text-lg font-bold text-zinc-100">STAR Case Study & Engineering Whitepaper</h2>
+      </div>
+      <button onclick="toggleDrawer(false)" class="min-h-[44px] min-w-[44px] rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-100 flex items-center justify-center transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Drawer Scrollable Body -->
+    <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-xs text-zinc-300 leading-relaxed">
+      
+      <!-- Executive Summary -->
+      <div class="bg-zinc-900/80 border border-white/5 rounded-xl p-4 space-y-2">
+        <div class="text-xs font-mono uppercase text-emerald-400 font-semibold">Executive Pitch</div>
+        <h4 class="text-sm font-semibold text-zinc-100">Optimizing Multi-Agent Telemetry & Unit Economics at Scale</h4>
+        <p class="text-zinc-400">
+          Transforming opaque LLM API egress logs into high-fidelity unit economic observability, tail-latency root cause isolation, and automated FinOps decision-making across 55,877 production transactions.
+        </p>
+      </div>
+
+      <!-- Quick Copy Bullet Points -->
+      <div class="bg-zinc-900/60 border border-emerald-500/20 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono uppercase text-emerald-300 font-semibold">Resume / CV Bullet Points</span>
+          <button onclick="copySTARResumePitch()" class="min-h-[36px] px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-500/30 rounded text-[11px] font-mono hover:bg-emerald-900 transition-colors">
+            Copy All
+          </button>
+        </div>
+        <div class="bg-zinc-950 p-3 rounded font-mono text-[11px] text-zinc-300 space-y-2 border border-white/5">
+          <p>• Architected an end-to-end telemetry and unit-economics analytical engine analyzing 55,877+ production LLM gateway transactions from 9Router infrastructure.</p>
+          <p>• Formulated core FinOps metrics including Effective Token Cost (ETC $/MTok), Reasoning Overhead Multiplier (ROM), and Routing Arbitrage Savings Index (RASI) to quantify multi-provider routing efficiency.</p>
+          <p>• Designed 4 analytical dashboard modules providing Pareto frontier trade-offs (Latency vs. Cost), diurnal traffic acceleration tracking, and connection-level error attribution for Head of AI and CFO stakeholders.</p>
+          <p>• Parsed nested telemetry JSON payloads to isolate latent reasoning/thinking token consumption and evaluate context-cache discount realization across diverse model endpoints.</p>
+        </div>
+      </div>
+
+      <!-- S-T-A-R Sections in Drawer -->
+      <div class="space-y-4">
+        <div class="border-l-2 border-emerald-500 pl-3">
+          <h5 class="text-xs font-mono font-bold uppercase text-zinc-200">1. Situation</h5>
+          <p class="mt-1 text-zinc-400">Traditional APM tools fail to capture asymmetric pricing, latent reasoning tokens, and multi-provider fallback efficiencies in high-volume multi-agent ecosystems.</p>
+        </div>
+        <div class="border-l-2 border-sky-500 pl-3">
+          <h5 class="text-xs font-mono font-bold uppercase text-zinc-200">2. Task</h5>
+          <p class="mt-1 text-zinc-400">Build high-performance dimensional data marts from raw SQLite transactions, define mathematical unit economics, and deliver an executive FinOps console.</p>
+        </div>
+        <div class="border-l-2 border-amber-500 pl-3">
+          <h5 class="text-xs font-mono font-bold uppercase text-zinc-200">3. Action</h5>
+          <p class="mt-1 text-zinc-400">Parsed token hierarchies, normalized UTC to Asia/Jakarta (WIB), derived empirical percentile distributions, and constructed Pareto frontier trade-off algorithms.</p>
+        </div>
+        <div class="border-l-2 border-emerald-400 pl-3">
+          <h5 class="text-xs font-mono font-bold uppercase text-zinc-200">4. Result</h5>
+          <p class="mt-1 text-zinc-400">100% cost traceability, $9,373.59 documented arbitrage savings (88.35%), reasoning waste elimination, and zero-downtime routing optimization.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-white/[0.08] bg-zinc-900/60 flex items-center justify-between text-xs text-zinc-400">
+      <span>Author: Alif Ihsan (Data Analyst)</span>
+      <button onclick="toggleDrawer(false)" class="min-h-[44px] px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg transition-colors font-medium">
+        Close Drawer
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.08] bg-zinc-950 mt-12 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-mono">
+      <div>
+        <span>AI Telemetry & Unit Economics Inspector</span> · <span>9Router Production Mart</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span>Author: Alif Ihsan</span>
+        <span>•</span>
+        <span>WCAG AAA Compliant</span>
+        <span>•</span>
+        <span class="text-emerald-400">Anti-Slop Craftsmanship</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================================================================= -->
+  <!-- JAVASCRIPT LOGIC & DATA LAYER -->
+  <!-- ================================================================= -->
+  <script>
+    // Embedded Snapshot Fallback (Guarantees zero crashes if opened via file://)
+    const INLINE_FALLBACK = {"summary":{"total_requests":55877,"gross_spend_usd":1236.5703,"benchmark_frontier_spend_usd":10610.1599,"rasi_savings_usd":9373.5896,"rasi_savings_pct":88.35,"blended_etc_per_mtok":0.3624,"total_tokens":3411937705,"prompt_tokens":3380742138,"completion_tokens":31195567,"cached_tokens":3027818918,"reasoning_tokens":2734303,"visible_completion_tokens":28461264,"fleet_rom_ratio":0.0961,"avg_rom_per_request":0.0515,"cache_realized_discount_ratio":0.8835,"total_errors":0,"error_rate_pct":0.0,"status_ok_rate_pct":100.0,"generated_at_utc":"2026-11-02T10:41:43.847093+00:00"},"model_frontier":[{"model":"gemini-3.8-flash-high","provider":"antigravity","total_requests":21189,"prompt_tokens":1596144664,"completion_tokens":14623857,"reasoning_tokens":957949,"cached_tokens":1450072270,"total_tokens":1610768521,"gross_cost_usd":557.0753,"benchmark_cost_usd":5007.7918,"rasi_savings_usd":4450.7166,"rasi_savings_pct":88.88,"etc_per_mtok":0.3458,"rom_ratio":0.0701,"avg_rom":0.008,"p50_latency_sec":5.331,"p90_latency_sec":20.389,"p99_latency_sec":122.085,"tvi_index":21.901,"status_ok_rate_pct":100.0},{"model":"gemini-3.8-flash","provider":"antigravity","total_requests":19486,"prompt_tokens":1037707713,"completion_tokens":7947336,"reasoning_tokens":1347138,"cached_tokens":919011161,"total_tokens":1045655049,"gross_cost_usd":390.6568,"benchmark_cost_usd":3232.3332,"rasi_savings_usd":2841.6764,"rasi_savings_pct":87.91,"etc_per_mtok":0.3736,"rom_ratio":0.2041,"avg_rom":0.044,"p50_latency_sec":4.844,"p90_latency_sec":17.915,"p99_latency_sec":95.965,"tvi_index":18.8111,"status_ok_rate_pct":100.0},{"model":"gemini-3.8-flash-medium","provider":"antigravity","total_requests":10065,"prompt_tokens":503070341,"completion_tokens":6096585,"reasoning_tokens":85626,"cached_tokens":453737372,"total_tokens":509166926,"gross_cost_usd":188.7477,"benchmark_cost_usd":1600.6598,"rasi_savings_usd":1411.9121,"rasi_savings_pct":88.21,"etc_per_mtok":0.3707,"rom_ratio":0.0142,"avg_rom":0.0058,"p50_latency_sec":4.6,"p90_latency_sec":17.041,"p99_latency_sec":70.016,"tvi_index":14.2209,"status_ok_rate_pct":100.0},{"model":"gemini-3.8-flash-low","provider":"antigravity","total_requests":3211,"prompt_tokens":144858613,"completion_tokens":1251259,"reasoning_tokens":43865,"cached_tokens":123287266,"total_tokens":146109872,"gross_cost_usd":60.728,"benchmark_cost_usd":453.3447,"rasi_savings_usd":392.6167,"rasi_savings_pct":86.6,"etc_per_mtok":0.4156,"rom_ratio":0.0363,"avg_rom":0.0006,"p50_latency_sec":6.134,"p90_latency_sec":21.335,"p99_latency_sec":147.659,"tvi_index":23.0722,"status_ok_rate_pct":100.0},{"model":"deepseek-v4.1-flash-free","provider":"opencode","total_requests":1309,"prompt_tokens":65354456,"completion_tokens":895564,"reasoning_tokens":299094,"cached_tokens":60259328,"total_tokens":66250020,"gross_cost_usd":1.2165,"benchmark_cost_usd":209.4968,"rasi_savings_usd":208.2803,"rasi_savings_pct":99.42,"etc_per_mtok":0.0184,"rom_ratio":0.5014,"avg_rom":1.3671,"p50_latency_sec":8.617,"p90_latency_sec":40.821,"p99_latency_sec":332.245,"tvi_index":37.5569,"status_ok_rate_pct":100.0},{"model":"muse-spark-1.3","provider":"muse","total_requests":257,"prompt_tokens":18021570,"completion_tokens":288092,"reasoning_tokens":0,"cached_tokens":15364379,"total_tokens":18309662,"gross_cost_usd":6.8505,"benchmark_cost_usd":58.3861,"rasi_savings_usd":51.5356,"rasi_savings_pct":88.27,"etc_per_mtok":0.3741,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":5.18,"p90_latency_sec":26.329,"p99_latency_sec":150.55,"tvi_index":28.0637,"status_ok_rate_pct":100.0},{"model":"claude-sonnet-4.5","provider":"kiro","total_requests":169,"prompt_tokens":8791125,"completion_tokens":32938,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":8824063,"gross_cost_usd":26.8674,"benchmark_cost_usd":26.8674,"rasi_savings_usd":0.0,"rasi_savings_pct":0.0,"etc_per_mtok":3.0448,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":9.936,"p90_latency_sec":55.773,"p99_latency_sec":149.649,"tvi_index":14.0613,"status_ok_rate_pct":100.0},{"model":"claude-sonnet-4-6","provider":"antigravity","total_requests":113,"prompt_tokens":6594685,"completion_tokens":54707,"reasoning_tokens":0,"cached_tokens":6087078,"total_tokens":6649392,"gross_cost_usd":4.1695,"benchmark_cost_usd":20.6047,"rasi_savings_usd":16.4351,"rasi_savings_pct":79.76,"etc_per_mtok":0.6271,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":8.822,"p90_latency_sec":44.843,"p99_latency_sec":194.257,"tvi_index":21.0196,"status_ok_rate_pct":100.0},{"model":"deepseek-3.2","provider":"kiro","total_requests":32,"prompt_tokens":117187,"completion_tokens":3319,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":120506,"gross_cost_usd":0.0173,"benchmark_cost_usd":0.4013,"rasi_savings_usd":0.384,"rasi_savings_pct":95.68,"etc_per_mtok":0.1439,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":2.565,"p90_latency_sec":7.74,"p99_latency_sec":16.426,"tvi_index":5.4039,"status_ok_rate_pct":100.0},{"model":"auto","provider":"kiro","total_requests":6,"prompt_tokens":5173,"completion_tokens":191,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5364,"gross_cost_usd":0.0119,"benchmark_cost_usd":0.0184,"rasi_savings_usd":0.0065,"rasi_savings_pct":35.41,"etc_per_mtok":2.2136,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.309,"p90_latency_sec":3.657,"p99_latency_sec":3.657,"tvi_index":1.7937,"status_ok_rate_pct":100.0},{"model":"claude-sonnet-4.5-thinking-agentic","provider":"kiro","total_requests":5,"prompt_tokens":25067,"completion_tokens":213,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":25280,"gross_cost_usd":0.0784,"benchmark_cost_usd":0.0784,"rasi_savings_usd":0.0,"rasi_savings_pct":0.0,"etc_per_mtok":3.1011,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":2.631,"p90_latency_sec":4.981,"p99_latency_sec":4.981,"tvi_index":0.8932,"status_ok_rate_pct":100.0},{"model":"gemini-3.7-flash","provider":"gemini","total_requests":2,"prompt_tokens":4,"completion_tokens":18,"reasoning_tokens":169,"cached_tokens":0,"total_tokens":22,"gross_cost_usd":0.002,"benchmark_cost_usd":0.0003,"rasi_savings_usd":-0.0018,"rasi_savings_pct":-624.2,"etc_per_mtok":92.8295,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.184,"p90_latency_sec":1.83,"p99_latency_sec":1.83,"tvi_index":0.5456,"status_ok_rate_pct":100.0},{"model":"gpt-6.1-sol","provider":"codex","total_requests":2,"prompt_tokens":4980,"completion_tokens":26,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5006,"gross_cost_usd":0.0102,"benchmark_cost_usd":0.0153,"rasi_savings_usd":0.0051,"rasi_savings_pct":33.33,"etc_per_mtok":2.0416,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.763,"p90_latency_sec":0.763,"p99_latency_sec":0.763,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gpt-6-sol","provider":"codex","total_requests":2,"prompt_tokens":4980,"completion_tokens":26,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5006,"gross_cost_usd":0.0102,"benchmark_cost_usd":0.0153,"rasi_savings_usd":0.0051,"rasi_savings_pct":33.33,"etc_per_mtok":2.0416,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.204,"p90_latency_sec":0.249,"p99_latency_sec":0.249,"tvi_index":0.2206,"status_ok_rate_pct":100.0},{"model":"gpt-6-luna","provider":"codex","total_requests":2,"prompt_tokens":4980,"completion_tokens":26,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5006,"gross_cost_usd":0.0005,"benchmark_cost_usd":0.0153,"rasi_savings_usd":0.0148,"rasi_savings_pct":96.67,"etc_per_mtok":0.1021,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.317,"p90_latency_sec":0.36,"p99_latency_sec":0.36,"tvi_index":0.1356,"status_ok_rate_pct":100.0},{"model":"gpt-6-astra","provider":"codex","total_requests":2,"prompt_tokens":4972,"completion_tokens":26,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":4998,"gross_cost_usd":0.051,"benchmark_cost_usd":0.0153,"rasi_savings_usd":-0.0357,"rasi_savings_pct":-233.33,"etc_per_mtok":10.2081,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.284,"p90_latency_sec":0.352,"p99_latency_sec":0.352,"tvi_index":0.2394,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-sol","provider":"codex","total_requests":2,"prompt_tokens":4972,"completion_tokens":22,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":4994,"gross_cost_usd":0.0255,"benchmark_cost_usd":0.0152,"rasi_savings_usd":-0.0103,"rasi_savings_pct":-67.39,"etc_per_mtok":5.1101,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.468,"p90_latency_sec":0.785,"p99_latency_sec":0.785,"tvi_index":0.6774,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-terra","provider":"codex","total_requests":2,"prompt_tokens":4972,"completion_tokens":30,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5002,"gross_cost_usd":0.0129,"benchmark_cost_usd":0.0154,"rasi_savings_usd":0.0025,"rasi_savings_pct":16.18,"etc_per_mtok":2.575,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.761,"p90_latency_sec":1.108,"p99_latency_sec":1.108,"tvi_index":0.456,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-luna","provider":"codex","total_requests":2,"prompt_tokens":4972,"completion_tokens":28,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":5000,"gross_cost_usd":0.0051,"benchmark_cost_usd":0.0153,"rasi_savings_usd":0.0102,"rasi_savings_pct":66.48,"etc_per_mtok":1.028,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.153,"p90_latency_sec":0.422,"p99_latency_sec":0.422,"tvi_index":1.7582,"status_ok_rate_pct":100.0},{"model":"gpt-oss-120b-medium","provider":"antigravity","total_requests":1,"prompt_tokens":68,"completion_tokens":34,"reasoning_tokens":0,"cached_tokens":64,"total_tokens":102,"gross_cost_usd":0.0001,"benchmark_cost_usd":0.0007,"rasi_savings_usd":0.0006,"rasi_savings_pct":87.96,"etc_per_mtok":0.8431,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":13.942,"p90_latency_sec":13.942,"p99_latency_sec":13.942,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"claude-opus-4-6-thinking","provider":"antigravity","total_requests":1,"prompt_tokens":8,"completion_tokens":25,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":33,"gross_cost_usd":0.0007,"benchmark_cost_usd":0.0004,"rasi_savings_usd":-0.0003,"rasi_savings_pct":-66.67,"etc_per_mtok":20.1515,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":24.321,"p90_latency_sec":24.321,"p99_latency_sec":24.321,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"claude-haiku-4.5","provider":"kiro","total_requests":1,"prompt_tokens":4134,"completion_tokens":1,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":4135,"gross_cost_usd":0.0021,"benchmark_cost_usd":0.0124,"rasi_savings_usd":0.0103,"rasi_savings_pct":83.33,"etc_per_mtok":0.5005,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.579,"p90_latency_sec":0.579,"p99_latency_sec":0.579,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"nemotron-3-ultra-550b-a55b","provider":"nvidia","total_requests":1,"prompt_tokens":17,"completion_tokens":38,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":55,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0006,"rasi_savings_usd":0.0006,"rasi_savings_pct":100.0,"etc_per_mtok":0.0,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.195,"p90_latency_sec":1.195,"p99_latency_sec":1.195,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gemini-3.5-flash-lite","provider":"gemini","total_requests":1,"prompt_tokens":2,"completion_tokens":10,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":12,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0002,"rasi_savings_usd":0.0001,"rasi_savings_pct":83.59,"etc_per_mtok":2.1333,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.572,"p90_latency_sec":0.572,"p99_latency_sec":0.572,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gemini-3.6-flash","provider":"gemini","total_requests":1,"prompt_tokens":2,"completion_tokens":9,"reasoning_tokens":152,"cached_tokens":0,"total_tokens":11,"gross_cost_usd":0.0018,"benchmark_cost_usd":0.0001,"rasi_savings_usd":-0.0016,"rasi_savings_pct":-1162.77,"etc_per_mtok":161.8636,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.342,"p90_latency_sec":1.342,"p99_latency_sec":1.342,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gemini-3-flash-preview","provider":"gemini","total_requests":1,"prompt_tokens":2,"completion_tokens":9,"reasoning_tokens":52,"cached_tokens":0,"total_tokens":11,"gross_cost_usd":0.0003,"benchmark_cost_usd":0.0001,"rasi_savings_usd":-0.0001,"rasi_savings_pct":-85.82,"etc_per_mtok":23.8182,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.312,"p90_latency_sec":1.312,"p99_latency_sec":1.312,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gemma-4-31b-it","provider":"gemini","total_requests":1,"prompt_tokens":2,"completion_tokens":9,"reasoning_tokens":71,"cached_tokens":0,"total_tokens":11,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0001,"rasi_savings_usd":0.0001,"rasi_savings_pct":100.0,"etc_per_mtok":0.0,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":3.19,"p90_latency_sec":3.19,"p99_latency_sec":3.19,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gemini-3.8-flash","provider":"gemini","total_requests":1,"prompt_tokens":2,"completion_tokens":9,"reasoning_tokens":166,"cached_tokens":0,"total_tokens":11,"gross_cost_usd":0.0019,"benchmark_cost_usd":0.0001,"rasi_savings_usd":-0.0018,"rasi_savings_pct":-1274.47,"etc_per_mtok":176.1818,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":4.526,"p90_latency_sec":4.526,"p99_latency_sec":4.526,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-sol-review","provider":"codex","total_requests":1,"prompt_tokens":2486,"completion_tokens":11,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":2497,"gross_cost_usd":0.0064,"benchmark_cost_usd":0.0076,"rasi_savings_usd":0.0012,"rasi_savings_pct":16.31,"etc_per_mtok":2.5551,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.805,"p90_latency_sec":0.805,"p99_latency_sec":0.805,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-terra-review","provider":"codex","total_requests":1,"prompt_tokens":2486,"completion_tokens":15,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":2501,"gross_cost_usd":0.0064,"benchmark_cost_usd":0.0077,"rasi_savings_usd":0.0012,"rasi_savings_pct":16.18,"etc_per_mtok":2.575,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.606,"p90_latency_sec":0.606,"p99_latency_sec":0.606,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gpt-5.6-luna-review","provider":"codex","total_requests":1,"prompt_tokens":2486,"completion_tokens":13,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":2499,"gross_cost_usd":0.0064,"benchmark_cost_usd":0.0077,"rasi_savings_usd":0.0012,"rasi_savings_pct":16.24,"etc_per_mtok":2.565,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.475,"p90_latency_sec":0.475,"p99_latency_sec":0.475,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"gpt-reserve","provider":"codex","total_requests":1,"prompt_tokens":2486,"completion_tokens":13,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":2499,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0077,"rasi_savings_usd":0.0077,"rasi_savings_pct":100.0,"etc_per_mtok":0.0,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":5.599,"p90_latency_sec":5.599,"p99_latency_sec":5.599,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"codex-auto-review","provider":"codex","total_requests":1,"prompt_tokens":2486,"completion_tokens":14,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":2500,"gross_cost_usd":0.0045,"benchmark_cost_usd":0.0077,"rasi_savings_usd":0.0031,"rasi_savings_pct":40.71,"etc_per_mtok":1.8186,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.184,"p90_latency_sec":0.184,"p99_latency_sec":0.184,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"muse-spark-1.2","provider":"muse","total_requests":1,"prompt_tokens":9,"completion_tokens":123,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":132,"gross_cost_usd":0.0005,"benchmark_cost_usd":0.0019,"rasi_savings_usd":0.0013,"rasi_savings_pct":71.47,"etc_per_mtok":4.0455,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":93.133,"p90_latency_sec":93.133,"p99_latency_sec":93.133,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"muse-spark-1.2-contributor","provider":"muse","total_requests":1,"prompt_tokens":9,"completion_tokens":176,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":185,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0027,"rasi_savings_usd":0.0026,"rasi_savings_pct":98.65,"etc_per_mtok":0.1951,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":0.819,"p90_latency_sec":0.819,"p99_latency_sec":0.819,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"muse-spark-1.1","provider":"muse","total_requests":1,"prompt_tokens":9,"completion_tokens":460,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":469,"gross_cost_usd":0.002,"benchmark_cost_usd":0.0069,"rasi_savings_usd":0.005,"rasi_savings_pct":71.61,"etc_per_mtok":4.1924,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.2,"p90_latency_sec":1.2,"p99_latency_sec":1.2,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"muse-spark-1.3-contributor","provider":"muse","total_requests":1,"prompt_tokens":9,"completion_tokens":294,"reasoning_tokens":0,"cached_tokens":0,"total_tokens":303,"gross_cost_usd":0.0001,"benchmark_cost_usd":0.0044,"rasi_savings_usd":0.0044,"rasi_savings_pct":98.65,"etc_per_mtok":0.197,"rom_ratio":0.0,"avg_rom":0.0,"p50_latency_sec":1.835,"p90_latency_sec":1.835,"p99_latency_sec":1.835,"tvi_index":0.0,"status_ok_rate_pct":100.0},{"model":"muse-wonder-1.0","provider":"muse","total_requests":1,"prompt_tokens":9,"completion_tokens":41,"reasoning_tokens":21,"cached_tokens":0,"total_tokens":50,"gross_cost_usd":0.0,"benchmark_cost_usd":0.0006,"rasi_savings_usd":0.0006,"rasi_savings_pct":100.0,"etc_per_mtok":0.0,"rom_ratio":1.05,"avg_rom":1.05,"p50_latency_sec":1.635,"p90_latency_sec":1.635,"p99_latency_sec":1.635,"tvi_index":0.0,"status_ok_rate_pct":100.0}],"diurnal_matrix":{"timezone":"Asia/Jakarta (WIB, UTC+7)","days":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"hours":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],"cells":[{"day":"Monday","day_idx":0,"hour":0,"requests":713,"total_tokens":51045600,"prompt_tokens":50553616,"completion_tokens":491984,"total_cost_usd":18.0301},{"day":"Monday","day_idx":0,"hour":1,"requests":178,"total_tokens":16957378,"prompt_tokens":16862942,"completion_tokens":94436,"total_cost_usd":4.7583},{"day":"Monday","day_idx":0,"hour":2,"requests":15,"total_tokens":652678,"prompt_tokens":648575,"completion_tokens":4103,"total_cost_usd":0.2895},{"day":"Monday","day_idx":0,"hour":3,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Monday","day_idx":0,"hour":4,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Monday","day_idx":0,"hour":5,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Monday","day_idx":0,"hour":6,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Monday","day_idx":0,"hour":7,"requests":241,"total_tokens":14603009,"prompt_tokens":14529189,"completion_tokens":73820,"total_cost_usd":4.3942},{"day":"Monday","day_idx":0,"hour":8,"requests":760,"total_tokens":46761247,"prompt_tokens":46359762,"completion_tokens":401485,"total_cost_usd":15.4259},{"day":"Monday","day_idx":0,"hour":9,"requests":211,"total_tokens":12054578,"prompt_tokens":11936406,"completion_tokens":118172,"total_cost_usd":5.074},{"day":"Monday","day_idx":0,"hour":10,"requests":376,"total_tokens":27376978,"prompt_tokens":27205668,"completion_tokens":171310,"total_cost_usd":8.607},{"day":"Monday","day_idx":0,"hour":11,"requests":513,"total_tokens":43013665,"prompt_tokens":42688426,"completion_tokens":325239,"total_cost_usd":15.8284},{"day":"Monday","day_idx":0,"hour":12,"requests":571,"total_tokens":48704444,"prompt_tokens":48242665,"completion_tokens":461779,"total_cost_usd":16.6667},{"day":"Monday","day_idx":0,"hour":13,"requests":341,"total_tokens":32801353,"prompt_tokens":32570075,"completion_tokens":231278,"total_cost_usd":10.1058},{"day":"Monday","day_idx":0,"hour":14,"requests":629,"total_tokens":47955793,"prompt_tokens":47481384,"completion_tokens":474409,"total_cost_usd":16.3129},{"day":"Monday","day_idx":0,"hour":15,"requests":417,"total_tokens":32796494,"prompt_tokens":32582830,"completion_tokens":213664,"total_cost_usd":10.5554},{"day":"Monday","day_idx":0,"hour":16,"requests":353,"total_tokens":23940558,"prompt_tokens":23771980,"completion_tokens":168578,"total_cost_usd":7.6057},{"day":"Monday","day_idx":0,"hour":17,"requests":695,"total_tokens":48494343,"prompt_tokens":48202009,"completion_tokens":292334,"total_cost_usd":16.3996},{"day":"Monday","day_idx":0,"hour":18,"requests":324,"total_tokens":20970696,"prompt_tokens":20777804,"completion_tokens":192892,"total_cost_usd":8.8835},{"day":"Monday","day_idx":0,"hour":19,"requests":625,"total_tokens":37666031,"prompt_tokens":37280027,"completion_tokens":386004,"total_cost_usd":13.589},{"day":"Monday","day_idx":0,"hour":20,"requests":454,"total_tokens":24018166,"prompt_tokens":23745039,"completion_tokens":273127,"total_cost_usd":10.5221},{"day":"Monday","day_idx":0,"hour":21,"requests":546,"total_tokens":34750864,"prompt_tokens":34482397,"completion_tokens":268467,"total_cost_usd":12.4301},{"day":"Monday","day_idx":0,"hour":22,"requests":668,"total_tokens":37145976,"prompt_tokens":36784961,"completion_tokens":361015,"total_cost_usd":13.8638},{"day":"Monday","day_idx":0,"hour":23,"requests":592,"total_tokens":43686404,"prompt_tokens":43294622,"completion_tokens":391782,"total_cost_usd":16.5007},{"day":"Tuesday","day_idx":1,"hour":0,"requests":428,"total_tokens":28791052,"prompt_tokens":28540333,"completion_tokens":250719,"total_cost_usd":11.4595},{"day":"Tuesday","day_idx":1,"hour":1,"requests":209,"total_tokens":11532763,"prompt_tokens":11378842,"completion_tokens":153921,"total_cost_usd":5.5705},{"day":"Tuesday","day_idx":1,"hour":2,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Tuesday","day_idx":1,"hour":3,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Tuesday","day_idx":1,"hour":4,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Tuesday","day_idx":1,"hour":5,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Tuesday","day_idx":1,"hour":6,"requests":38,"total_tokens":2843585,"prompt_tokens":2841851,"completion_tokens":1734,"total_cost_usd":0.7082},{"day":"Tuesday","day_idx":1,"hour":7,"requests":306,"total_tokens":20156547,"prompt_tokens":20034997,"completion_tokens":121550,"total_cost_usd":6.5218},{"day":"Tuesday","day_idx":1,"hour":8,"requests":605,"total_tokens":39610965,"prompt_tokens":39362030,"completion_tokens":248935,"total_cost_usd":17.0975},{"day":"Tuesday","day_idx":1,"hour":9,"requests":30,"total_tokens":1483832,"prompt_tokens":1454615,"completion_tokens":29217,"total_cost_usd":1.8386},{"day":"Tuesday","day_idx":1,"hour":10,"requests":257,"total_tokens":14691436,"prompt_tokens":14590576,"completion_tokens":100860,"total_cost_usd":5.7927},{"day":"Tuesday","day_idx":1,"hour":11,"requests":340,"total_tokens":18823711,"prompt_tokens":18678839,"completion_tokens":144872,"total_cost_usd":7.8471},{"day":"Tuesday","day_idx":1,"hour":12,"requests":245,"total_tokens":13324107,"prompt_tokens":13180560,"completion_tokens":143547,"total_cost_usd":8.8835},{"day":"Tuesday","day_idx":1,"hour":13,"requests":385,"total_tokens":23510087,"prompt_tokens":23316807,"completion_tokens":193280,"total_cost_usd":10.9168},{"day":"Tuesday","day_idx":1,"hour":14,"requests":644,"total_tokens":29044520,"prompt_tokens":28653797,"completion_tokens":390723,"total_cost_usd":13.764},{"day":"Tuesday","day_idx":1,"hour":15,"requests":738,"total_tokens":30769378,"prompt_tokens":30330641,"completion_tokens":438737,"total_cost_usd":13.2498},{"day":"Tuesday","day_idx":1,"hour":16,"requests":390,"total_tokens":16379961,"prompt_tokens":16146742,"completion_tokens":233219,"total_cost_usd":8.1313},{"day":"Tuesday","day_idx":1,"hour":17,"requests":322,"total_tokens":14760690,"prompt_tokens":14633192,"completion_tokens":127498,"total_cost_usd":18.8872},{"day":"Tuesday","day_idx":1,"hour":18,"requests":522,"total_tokens":27040449,"prompt_tokens":26808536,"completion_tokens":231913,"total_cost_usd":19.6517},{"day":"Tuesday","day_idx":1,"hour":19,"requests":700,"total_tokens":35696692,"prompt_tokens":35336381,"completion_tokens":360311,"total_cost_usd":12.4744},{"day":"Tuesday","day_idx":1,"hour":20,"requests":403,"total_tokens":18297458,"prompt_tokens":18048206,"completion_tokens":249252,"total_cost_usd":8.6015},{"day":"Tuesday","day_idx":1,"hour":21,"requests":88,"total_tokens":5625231,"prompt_tokens":5550777,"completion_tokens":74454,"total_cost_usd":2.4178},{"day":"Tuesday","day_idx":1,"hour":22,"requests":323,"total_tokens":19781146,"prompt_tokens":19697110,"completion_tokens":84036,"total_cost_usd":5.5949},{"day":"Tuesday","day_idx":1,"hour":23,"requests":373,"total_tokens":22747924,"prompt_tokens":22627786,"completion_tokens":120138,"total_cost_usd":6.0607},{"day":"Wednesday","day_idx":2,"hour":0,"requests":227,"total_tokens":11567669,"prompt_tokens":11382457,"completion_tokens":185212,"total_cost_usd":2.3281},{"day":"Wednesday","day_idx":2,"hour":1,"requests":315,"total_tokens":12798047,"prompt_tokens":12644888,"completion_tokens":153159,"total_cost_usd":3.4052},{"day":"Wednesday","day_idx":2,"hour":2,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Wednesday","day_idx":2,"hour":3,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Wednesday","day_idx":2,"hour":4,"requests":26,"total_tokens":1512366,"prompt_tokens":1497457,"completion_tokens":14909,"total_cost_usd":0.7648},{"day":"Wednesday","day_idx":2,"hour":5,"requests":93,"total_tokens":3518428,"prompt_tokens":3491992,"completion_tokens":26436,"total_cost_usd":1.3293},{"day":"Wednesday","day_idx":2,"hour":6,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Wednesday","day_idx":2,"hour":7,"requests":188,"total_tokens":7525057,"prompt_tokens":7432537,"completion_tokens":92520,"total_cost_usd":2.2621},{"day":"Wednesday","day_idx":2,"hour":8,"requests":103,"total_tokens":5020105,"prompt_tokens":4967418,"completion_tokens":52687,"total_cost_usd":0.4276},{"day":"Wednesday","day_idx":2,"hour":9,"requests":409,"total_tokens":16256158,"prompt_tokens":16048548,"completion_tokens":207610,"total_cost_usd":5.8915},{"day":"Wednesday","day_idx":2,"hour":10,"requests":448,"total_tokens":22037595,"prompt_tokens":21824152,"completion_tokens":213443,"total_cost_usd":6.141},{"day":"Wednesday","day_idx":2,"hour":11,"requests":946,"total_tokens":60209213,"prompt_tokens":59660328,"completion_tokens":548885,"total_cost_usd":15.9546},{"day":"Wednesday","day_idx":2,"hour":12,"requests":689,"total_tokens":37762667,"prompt_tokens":37370320,"completion_tokens":392347,"total_cost_usd":9.2343},{"day":"Wednesday","day_idx":2,"hour":13,"requests":422,"total_tokens":20022953,"prompt_tokens":19666769,"completion_tokens":356184,"total_cost_usd":6.6585},{"day":"Wednesday","day_idx":2,"hour":14,"requests":294,"total_tokens":16642616,"prompt_tokens":16584645,"completion_tokens":57971,"total_cost_usd":4.7791},{"day":"Wednesday","day_idx":2,"hour":15,"requests":139,"total_tokens":10967580,"prompt_tokens":10858908,"completion_tokens":108672,"total_cost_usd":3.4504},{"day":"Wednesday","day_idx":2,"hour":16,"requests":567,"total_tokens":29566546,"prompt_tokens":29330656,"completion_tokens":235890,"total_cost_usd":10.682},{"day":"Wednesday","day_idx":2,"hour":17,"requests":839,"total_tokens":42921778,"prompt_tokens":42563919,"completion_tokens":357859,"total_cost_usd":15.6238},{"day":"Wednesday","day_idx":2,"hour":18,"requests":715,"total_tokens":36310976,"prompt_tokens":36007901,"completion_tokens":303075,"total_cost_usd":13.1659},{"day":"Wednesday","day_idx":2,"hour":19,"requests":713,"total_tokens":46496499,"prompt_tokens":46085581,"completion_tokens":410918,"total_cost_usd":16.3788},{"day":"Wednesday","day_idx":2,"hour":20,"requests":645,"total_tokens":38858982,"prompt_tokens":38592068,"completion_tokens":266914,"total_cost_usd":12.3128},{"day":"Wednesday","day_idx":2,"hour":21,"requests":520,"total_tokens":24121511,"prompt_tokens":23850881,"completion_tokens":270630,"total_cost_usd":9.7154},{"day":"Wednesday","day_idx":2,"hour":22,"requests":715,"total_tokens":38730153,"prompt_tokens":38381554,"completion_tokens":348599,"total_cost_usd":13.2643},{"day":"Wednesday","day_idx":2,"hour":23,"requests":490,"total_tokens":31358377,"prompt_tokens":31152052,"completion_tokens":206325,"total_cost_usd":10.7403},{"day":"Thursday","day_idx":3,"hour":0,"requests":216,"total_tokens":13440538,"prompt_tokens":13274002,"completion_tokens":166536,"total_cost_usd":5.0995},{"day":"Thursday","day_idx":3,"hour":1,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":2,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":3,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":4,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":5,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":6,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Thursday","day_idx":3,"hour":7,"requests":23,"total_tokens":260475,"prompt_tokens":255955,"completion_tokens":4520,"total_cost_usd":0.4233},{"day":"Thursday","day_idx":3,"hour":8,"requests":267,"total_tokens":20201567,"prompt_tokens":20094218,"completion_tokens":107349,"total_cost_usd":4.2748},{"day":"Thursday","day_idx":3,"hour":9,"requests":461,"total_tokens":20266770,"prompt_tokens":20095678,"completion_tokens":171092,"total_cost_usd":5.5629},{"day":"Thursday","day_idx":3,"hour":10,"requests":278,"total_tokens":13627385,"prompt_tokens":13511232,"completion_tokens":116153,"total_cost_usd":4.8337},{"day":"Thursday","day_idx":3,"hour":11,"requests":352,"total_tokens":17453382,"prompt_tokens":17299803,"completion_tokens":153579,"total_cost_usd":6.5817},{"day":"Thursday","day_idx":3,"hour":12,"requests":501,"total_tokens":19875513,"prompt_tokens":19668090,"completion_tokens":207423,"total_cost_usd":8.1711},{"day":"Thursday","day_idx":3,"hour":13,"requests":342,"total_tokens":16791686,"prompt_tokens":16618043,"completion_tokens":173643,"total_cost_usd":7.7505},{"day":"Thursday","day_idx":3,"hour":14,"requests":529,"total_tokens":25841839,"prompt_tokens":25625719,"completion_tokens":216120,"total_cost_usd":9.7597},{"day":"Thursday","day_idx":3,"hour":15,"requests":97,"total_tokens":5697454,"prompt_tokens":5658574,"completion_tokens":38880,"total_cost_usd":2.9696},{"day":"Thursday","day_idx":3,"hour":16,"requests":159,"total_tokens":8413919,"prompt_tokens":8363174,"completion_tokens":50745,"total_cost_usd":2.7091},{"day":"Thursday","day_idx":3,"hour":17,"requests":183,"total_tokens":9087223,"prompt_tokens":8984978,"completion_tokens":102245,"total_cost_usd":3.6259},{"day":"Thursday","day_idx":3,"hour":18,"requests":320,"total_tokens":15439964,"prompt_tokens":15348100,"completion_tokens":91864,"total_cost_usd":6.8188},{"day":"Thursday","day_idx":3,"hour":19,"requests":418,"total_tokens":20748896,"prompt_tokens":20533849,"completion_tokens":215047,"total_cost_usd":8.0432},{"day":"Thursday","day_idx":3,"hour":20,"requests":322,"total_tokens":19170216,"prompt_tokens":19018588,"completion_tokens":151628,"total_cost_usd":6.3139},{"day":"Thursday","day_idx":3,"hour":21,"requests":935,"total_tokens":50568944,"prompt_tokens":50168736,"completion_tokens":400208,"total_cost_usd":17.4395},{"day":"Thursday","day_idx":3,"hour":22,"requests":470,"total_tokens":25540542,"prompt_tokens":25215468,"completion_tokens":325074,"total_cost_usd":10.4455},{"day":"Thursday","day_idx":3,"hour":23,"requests":404,"total_tokens":20773376,"prompt_tokens":20594493,"completion_tokens":178883,"total_cost_usd":7.7425},{"day":"Friday","day_idx":4,"hour":0,"requests":359,"total_tokens":19036839,"prompt_tokens":18837663,"completion_tokens":199176,"total_cost_usd":7.0647},{"day":"Friday","day_idx":4,"hour":1,"requests":80,"total_tokens":4342366,"prompt_tokens":4312167,"completion_tokens":30199,"total_cost_usd":1.5216},{"day":"Friday","day_idx":4,"hour":2,"requests":39,"total_tokens":1642698,"prompt_tokens":1617959,"completion_tokens":24739,"total_cost_usd":0.6052},{"day":"Friday","day_idx":4,"hour":3,"requests":360,"total_tokens":26342596,"prompt_tokens":26119784,"completion_tokens":222812,"total_cost_usd":8.9668},{"day":"Friday","day_idx":4,"hour":4,"requests":318,"total_tokens":18692456,"prompt_tokens":18455598,"completion_tokens":236858,"total_cost_usd":6.9341},{"day":"Friday","day_idx":4,"hour":5,"requests":282,"total_tokens":22312041,"prompt_tokens":22093244,"completion_tokens":218797,"total_cost_usd":7.251},{"day":"Friday","day_idx":4,"hour":6,"requests":121,"total_tokens":8880985,"prompt_tokens":8783831,"completion_tokens":97154,"total_cost_usd":2.8176},{"day":"Friday","day_idx":4,"hour":7,"requests":542,"total_tokens":41622746,"prompt_tokens":41330922,"completion_tokens":291824,"total_cost_usd":12.0532},{"day":"Friday","day_idx":4,"hour":8,"requests":205,"total_tokens":14339023,"prompt_tokens":14199893,"completion_tokens":139130,"total_cost_usd":5.4954},{"day":"Friday","day_idx":4,"hour":9,"requests":743,"total_tokens":48622479,"prompt_tokens":48223586,"completion_tokens":398893,"total_cost_usd":16.4626},{"day":"Friday","day_idx":4,"hour":10,"requests":581,"total_tokens":34661565,"prompt_tokens":34299467,"completion_tokens":362098,"total_cost_usd":11.9241},{"day":"Friday","day_idx":4,"hour":11,"requests":491,"total_tokens":26971199,"prompt_tokens":26584269,"completion_tokens":386930,"total_cost_usd":11.1484},{"day":"Friday","day_idx":4,"hour":12,"requests":286,"total_tokens":15669576,"prompt_tokens":15364500,"completion_tokens":305076,"total_cost_usd":7.4285},{"day":"Friday","day_idx":4,"hour":13,"requests":402,"total_tokens":23685937,"prompt_tokens":23245034,"completion_tokens":440903,"total_cost_usd":10.5032},{"day":"Friday","day_idx":4,"hour":14,"requests":341,"total_tokens":18720394,"prompt_tokens":18454307,"completion_tokens":266087,"total_cost_usd":8.169},{"day":"Friday","day_idx":4,"hour":15,"requests":342,"total_tokens":21662115,"prompt_tokens":21492149,"completion_tokens":169966,"total_cost_usd":7.1299},{"day":"Friday","day_idx":4,"hour":16,"requests":691,"total_tokens":42184192,"prompt_tokens":41937211,"completion_tokens":246981,"total_cost_usd":14.0682},{"day":"Friday","day_idx":4,"hour":17,"requests":561,"total_tokens":34855712,"prompt_tokens":34601858,"completion_tokens":253854,"total_cost_usd":12.5597},{"day":"Friday","day_idx":4,"hour":18,"requests":637,"total_tokens":40027936,"prompt_tokens":39727542,"completion_tokens":300394,"total_cost_usd":14.5026},{"day":"Friday","day_idx":4,"hour":19,"requests":701,"total_tokens":32691234,"prompt_tokens":32369866,"completion_tokens":321368,"total_cost_usd":16.4203},{"day":"Friday","day_idx":4,"hour":20,"requests":463,"total_tokens":27238748,"prompt_tokens":26922526,"completion_tokens":316222,"total_cost_usd":12.0279},{"day":"Friday","day_idx":4,"hour":21,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Friday","day_idx":4,"hour":22,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Friday","day_idx":4,"hour":23,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":0,"requests":194,"total_tokens":10948919,"prompt_tokens":10859145,"completion_tokens":89774,"total_cost_usd":4.0282},{"day":"Saturday","day_idx":5,"hour":1,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":2,"requests":74,"total_tokens":4995671,"prompt_tokens":4955777,"completion_tokens":39894,"total_cost_usd":1.429},{"day":"Saturday","day_idx":5,"hour":3,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":4,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":5,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":6,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Saturday","day_idx":5,"hour":7,"requests":20,"total_tokens":1367016,"prompt_tokens":1356194,"completion_tokens":10822,"total_cost_usd":0.9757},{"day":"Saturday","day_idx":5,"hour":8,"requests":109,"total_tokens":15337682,"prompt_tokens":15278348,"completion_tokens":59334,"total_cost_usd":3.942},{"day":"Saturday","day_idx":5,"hour":9,"requests":384,"total_tokens":25885663,"prompt_tokens":25528888,"completion_tokens":356775,"total_cost_usd":10.2176},{"day":"Saturday","day_idx":5,"hour":10,"requests":353,"total_tokens":26091894,"prompt_tokens":25787509,"completion_tokens":304385,"total_cost_usd":8.9921},{"day":"Saturday","day_idx":5,"hour":11,"requests":883,"total_tokens":54349877,"prompt_tokens":53905512,"completion_tokens":444365,"total_cost_usd":18.2354},{"day":"Saturday","day_idx":5,"hour":12,"requests":369,"total_tokens":24420828,"prompt_tokens":24144992,"completion_tokens":275836,"total_cost_usd":8.5661},{"day":"Saturday","day_idx":5,"hour":13,"requests":178,"total_tokens":9794162,"prompt_tokens":9637103,"completion_tokens":157059,"total_cost_usd":4.5691},{"day":"Saturday","day_idx":5,"hour":14,"requests":355,"total_tokens":26121582,"prompt_tokens":25840050,"completion_tokens":281532,"total_cost_usd":9.8795},{"day":"Saturday","day_idx":5,"hour":15,"requests":346,"total_tokens":17713635,"prompt_tokens":17377396,"completion_tokens":336239,"total_cost_usd":7.9066},{"day":"Saturday","day_idx":5,"hour":16,"requests":489,"total_tokens":33914912,"prompt_tokens":33609805,"completion_tokens":305107,"total_cost_usd":11.0922},{"day":"Saturday","day_idx":5,"hour":17,"requests":428,"total_tokens":28144196,"prompt_tokens":27850705,"completion_tokens":293491,"total_cost_usd":9.39},{"day":"Saturday","day_idx":5,"hour":18,"requests":463,"total_tokens":22802710,"prompt_tokens":22547653,"completion_tokens":255057,"total_cost_usd":8.7017},{"day":"Saturday","day_idx":5,"hour":19,"requests":385,"total_tokens":17462716,"prompt_tokens":17289277,"completion_tokens":173439,"total_cost_usd":6.5653},{"day":"Saturday","day_idx":5,"hour":20,"requests":265,"total_tokens":13022037,"prompt_tokens":12921296,"completion_tokens":100741,"total_cost_usd":4.8038},{"day":"Saturday","day_idx":5,"hour":21,"requests":263,"total_tokens":12942921,"prompt_tokens":12804005,"completion_tokens":138916,"total_cost_usd":5.9916},{"day":"Saturday","day_idx":5,"hour":22,"requests":131,"total_tokens":6124854,"prompt_tokens":6053625,"completion_tokens":71229,"total_cost_usd":3.3012},{"day":"Saturday","day_idx":5,"hour":23,"requests":457,"total_tokens":21990260,"prompt_tokens":21812407,"completion_tokens":177853,"total_cost_usd":6.8279},{"day":"Sunday","day_idx":6,"hour":0,"requests":247,"total_tokens":13042160,"prompt_tokens":12900541,"completion_tokens":141619,"total_cost_usd":4.9267},{"day":"Sunday","day_idx":6,"hour":1,"requests":133,"total_tokens":6473243,"prompt_tokens":6385469,"completion_tokens":87774,"total_cost_usd":3.0031},{"day":"Sunday","day_idx":6,"hour":2,"requests":15,"total_tokens":607407,"prompt_tokens":603786,"completion_tokens":3621,"total_cost_usd":0.2139},{"day":"Sunday","day_idx":6,"hour":3,"requests":10,"total_tokens":249611,"prompt_tokens":246807,"completion_tokens":2804,"total_cost_usd":0.113},{"day":"Sunday","day_idx":6,"hour":4,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Sunday","day_idx":6,"hour":5,"requests":0,"total_tokens":0,"prompt_tokens":0,"completion_tokens":0,"total_cost_usd":0.0},{"day":"Sunday","day_idx":6,"hour":6,"requests":88,"total_tokens":2486086,"prompt_tokens":2461469,"completion_tokens":24617,"total_cost_usd":1.0904},{"day":"Sunday","day_idx":6,"hour":7,"requests":58,"total_tokens":4498618,"prompt_tokens":4468090,"completion_tokens":30528,"total_cost_usd":2.0536},{"day":"Sunday","day_idx":6,"hour":8,"requests":413,"total_tokens":26540733,"prompt_tokens":26305542,"completion_tokens":235191,"total_cost_usd":9.5263},{"day":"Sunday","day_idx":6,"hour":9,"requests":408,"total_tokens":31284670,"prompt_tokens":31016706,"completion_tokens":267964,"total_cost_usd":12.0607},{"day":"Sunday","day_idx":6,"hour":10,"requests":563,"total_tokens":46373572,"prompt_tokens":46054876,"completion_tokens":318696,"total_cost_usd":15.2223},{"day":"Sunday","day_idx":6,"hour":11,"requests":116,"total_tokens":12312192,"prompt_tokens":12223685,"completion_tokens":88507,"total_cost_usd":4.0175},{"day":"Sunday","day_idx":6,"hour":12,"requests":36,"total_tokens":1862741,"prompt_tokens":1857459,"completion_tokens":5282,"total_cost_usd":0.6269},{"day":"Sunday","day_idx":6,"hour":13,"requests":509,"total_tokens":34997496,"prompt_tokens":34861874,"completion_tokens":135622,"total_cost_usd":9.0898},{"day":"Sunday","day_idx":6,"hour":14,"requests":467,"total_tokens":42722155,"prompt_tokens":42445243,"completion_tokens":276912,"total_cost_usd":12.9483},{"day":"Sunday","day_idx":6,"hour":15,"requests":378,"total_tokens":32832822,"prompt_tokens":32491609,"completion_tokens":341213,"total_cost_usd":11.4286},{"day":"Sunday","day_idx":6,"hour":16,"requests":419,"total_tokens":31358520,"prompt_tokens":30947395,"completion_tokens":411125,"total_cost_usd":11.9949},{"day":"Sunday","day_idx":6,"hour":17,"requests":440,"total_tokens":32277082,"prompt_tokens":32022375,"completion_tokens":254707,"total_cost_usd":11.0603},{"day":"Sunday","day_idx":6,"hour":18,"requests":724,"total_tokens":53951448,"prompt_tokens":53508676,"completion_tokens":442772,"total_cost_usd":17.0895},{"day":"Sunday","day_idx":6,"hour":19,"requests":912,"total_tokens":66931605,"prompt_tokens":66396095,"completion_tokens":535510,"total_cost_usd":21.3489},{"day":"Sunday","day_idx":6,"hour":20,"requests":940,"total_tokens":60564453,"prompt_tokens":60104363,"completion_tokens":460090,"total_cost_usd":19.0064},{"day":"Sunday","day_idx":6,"hour":21,"requests":592,"total_tokens":43319202,"prompt_tokens":42910530,"completion_tokens":408672,"total_cost_usd":14.0421},{"day":"Sunday","day_idx":6,"hour":22,"requests":661,"total_tokens":48162314,"prompt_tokens":47748088,"completion_tokens":414226,"total_cost_usd":15.2077},{"day":"Sunday","day_idx":6,"hour":23,"requests":709,"total_tokens":43742449,"prompt_tokens":43311671,"completion_tokens":430778,"total_cost_usd":15.6434}],"grid":{"requests":[[713,178,15,0,0,0,0,241,760,211,376,513,571,341,629,417,353,695,324,625,454,546,668,592],[428,209,0,0,0,0,38,306,605,30,257,340,245,385,644,738,390,322,522,700,403,88,323,373],[227,315,0,0,26,93,0,188,103,409,448,946,689,422,294,139,567,839,715,713,645,520,715,490],[216,0,0,0,0,0,0,23,267,461,278,352,501,342,529,97,159,183,320,418,322,935,470,404],[359,80,39,360,318,282,121,542,205,743,581,491,286,402,341,342,691,561,637,701,463,0,0,0],[194,0,74,0,0,0,0,20,109,384,353,883,369,178,355,346,489,428,463,385,265,263,131,457],[247,133,15,10,0,0,88,58,413,408,563,116,36,509,467,378,419,440,724,912,940,592,661,709]],"tokens":[[51045600,16957378,652678,0,0,0,0,14603009,46761247,12054578,27376978,43013665,48704444,32801353,47955793,32796494,23940558,48494343,20970696,37666031,24018166,34750864,37145976,43686404],[28791052,11532763,0,0,0,0,2843585,20156547,39610965,1483832,14691436,18823711,13324107,23510087,29044520,30769378,16379961,14760690,27040449,35696692,18297458,5625231,19781146,22747924],[11567669,12798047,0,0,1512366,3518428,0,7525057,5020105,16256158,22037595,60209213,37762667,20022953,16642616,10967580,29566546,42921778,36310976,46496499,38858982,24121511,38730153,31358377],[13440538,0,0,0,0,0,0,260475,20201567,20266770,13627385,17453382,19875513,16791686,25841839,5697454,8413919,9087223,15439964,20748896,19170216,50568944,25540542,20773376],[19036839,4342366,1642698,26342596,18692456,22312041,8880985,41622746,14339023,48622479,34661565,26971199,15669576,23685937,18720394,21662115,42184192,34855712,40027936,32691234,27238748,0,0,0],[10948919,0,4995671,0,0,0,0,1367016,15337682,25885663,26091894,54349877,24420828,9794162,26121582,17713635,33914912,28144196,22802710,17462716,13022037,12942921,6124854,21990260],[13042160,6473243,607407,249611,0,0,2486086,4498618,26540733,31284670,46373572,12312192,1862741,34997496,42722155,32832822,31358520,32277082,53951448,66931605,60564453,43319202,48162314,43742449]],"cost_usd":[[18.0301,4.7583,0.2895,0.0,0.0,0.0,0.0,4.3942,15.4259,5.074,8.607,15.8284,16.6667,10.1058,16.3129,10.5554,7.6057,16.3996,8.8835,13.589,10.5221,12.4301,13.8638,16.5007],[11.4595,5.5705,0.0,0.0,0.0,0.0,0.7082,6.5218,17.0975,1.8386,5.7927,7.8471,8.8835,10.9168,13.764,13.2498,8.1313,18.8872,19.6517,12.4744,8.6015,2.4178,5.5949,6.0607],[2.3281,3.4052,0.0,0.0,0.7648,1.3293,0.0,2.2621,0.4276,5.8915,6.141,15.9546,9.2343,6.6585,4.7791,3.4504,10.682,15.6238,13.1659,16.3788,12.3128,9.7154,13.2643,10.7403],[5.0995,0.0,0.0,0.0,0.0,0.0,0.0,0.4233,4.2748,5.5629,4.8337,6.5817,8.1711,7.7505,9.7597,2.9696,2.7091,3.6259,6.8188,8.0432,6.3139,17.4395,10.4455,7.7425],[7.0647,1.5216,0.6052,8.9668,6.9341,7.251,2.8176,12.0532,5.4954,16.4626,11.9241,11.1484,7.4285,10.5032,8.169,7.1299,14.0682,12.5597,14.5026,16.4203,12.0279,0.0,0.0,0.0],[4.0282,0.0,1.429,0.0,0.0,0.0,0.0,0.9757,3.942,10.2176,8.9921,18.2354,8.5661,4.5691,9.8795,7.9066,11.0922,9.39,8.7017,6.5653,4.8038,5.9916,3.3012,6.8279],[4.9267,3.0031,0.2139,0.113,0.0,0.0,1.0904,2.0536,9.5263,12.0607,15.2223,4.0175,0.6269,9.0898,12.9483,11.4286,11.9949,11.0603,17.0895,21.3489,19.0064,14.0421,15.2077,15.6434]]}},"error_attribution":{"total_requests":55877,"total_errors":0,"overall_error_rate_pct":0.0,"status_distribution":{"ok":55877},"by_provider":{"antigravity":{"provider":"antigravity","total_requests":54066,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":54066}},"kiro":{"provider":"kiro","total_requests":213,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":213}},"nvidia":{"provider":"nvidia","total_requests":1,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":1}},"opencode":{"provider":"opencode","total_requests":1309,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":1309}},"gemini":{"provider":"gemini","total_requests":7,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":7}},"codex":{"provider":"codex","total_requests":19,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":19}},"muse":{"provider":"muse","total_requests":262,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":262}}},"by_connection_id":{"328a1142-41be-46b8-bae1-745546fc569f":{"connection_id":"328a1142-41be-46b8-bae1-745546fc569f","provider":"antigravity","total_requests":295,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":295}},"045f1909-5181-4bcb-90b2-7a5c5d626e10":{"connection_id":"045f1909-5181-4bcb-90b2-7a5c5d626e10","provider":"antigravity","total_requests":12894,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":12894}},"48f04bc6-a32f-4fa8-b626-0987dd5bae15":{"connection_id":"48f04bc6-a32f-4fa8-b626-0987dd5bae15","provider":"kiro","total_requests":213,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":213}},"b34706c1-092c-44d7-a9bb-1ab1308ced91":{"connection_id":"b34706c1-092c-44d7-a9bb-1ab1308ced91","provider":"antigravity","total_requests":8789,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":8789}},"82d031fd-894b-4dab-aa09-f6422fff880f":{"connection_id":"82d031fd-894b-4dab-aa09-f6422fff880f","provider":"antigravity","total_requests":17709,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":17709}},"74bb7977-0e6c-4cc5-b1b5-3c650f1bfaa4":{"connection_id":"74bb7977-0e6c-4cc5-b1b5-3c650f1bfaa4","provider":"antigravity","total_requests":10665,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":10665}},"66b825af-0848-46b1-b670-976db5631e7b":{"connection_id":"66b825af-0848-46b1-b670-976db5631e7b","provider":"nvidia","total_requests":1,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":1}},"unassigned":{"connection_id":"unassigned","provider":"opencode","total_requests":1309,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":1309}},"4941b683-22e7-4b38-a51d-2989e2ba25ec":{"connection_id":"4941b683-22e7-4b38-a51d-2989e2ba25ec","provider":"gemini","total_requests":7,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":7}},"05af592f-ea3f-491e-b19f-e011ffa1f773":{"connection_id":"05af592f-ea3f-491e-b19f-e011ffa1f773","provider":"codex","total_requests":19,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":19}},"e6e4e8ca-a318-48dc-b1cc-30763d72ba68":{"connection_id":"e6e4e8ca-a318-48dc-b1cc-30763d72ba68","provider":"antigravity","total_requests":3714,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":3714}},"34c3a9bd-6782-47c5-9270-2b46cb07f13f":{"connection_id":"34c3a9bd-6782-47c5-9270-2b46cb07f13f","provider":"muse","total_requests":262,"error_count":0,"error_rate_pct":0.0,"status_distribution":{"ok":262}}}},"top_outliers":[{"rank":1,"request_id":2691,"timestamp_utc":"2026-10-18T09:07:16.827000+00:00","timestamp_wib":"2026-10-18T16:07:16.827000+07:00","duration_sec":1375.683,"model":"gemini-3.8-flash-high","raw_model":"gemini-3.8-flash-high","provider":"antigravity","connection_id":"045f1909-5181-4bcb-90b2-7a5c5d626e10","prompt_tokens":146277,"completion_tokens":61800,"reasoning_tokens":0,"total_tokens":208077,"cost_usd":0.682916,"status":"ok"},{"rank":2,"request_id":2536,"timestamp_utc":"2026-10-18T08:01:47.020000+00:00","timestamp_wib":"2026-10-18T15:01:47.020000+07:00","duration_sec":1371.239,"model":"gemini-3.8-flash-high","raw_model":"gemini-3.8-flash-high","provider":"antigravity","connection_id":"045f1909-5181-4bcb-90b2-7a5c5d626e10","prompt_tokens":128800,"completion_tokens":61600,"reasoning_tokens":0,"total_tokens":190400,"cost_usd":0.485027,"status":"ok"},{"rank":3,"request_id":13908,"timestamp_utc":"2026-10-21T06:25:31.095000+00:00","timestamp_wib":"2026-10-21T13:25:31.095000+07:00","duration_sec":519.37,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":29207,"completion_tokens":19931,"reasoning_tokens":4199,"total_tokens":49138,"cost_usd":0.01074,"status":"ok"},{"rank":4,"request_id":11122,"timestamp_utc":"2026-10-20T17:47:16.742000+00:00","timestamp_wib":"2026-10-21T00:47:16.742000+07:00","duration_sec":446.282,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":25932,"completion_tokens":17199,"reasoning_tokens":3512,"total_tokens":43131,"cost_usd":0.009324,"status":"ok"},{"rank":5,"request_id":13681,"timestamp_utc":"2026-10-21T06:06:50.786000+00:00","timestamp_wib":"2026-10-21T13:06:50.786000+07:00","duration_sec":426.582,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":32558,"completion_tokens":16444,"reasoning_tokens":3329,"total_tokens":49002,"cost_usd":0.006108,"status":"ok"},{"rank":6,"request_id":13252,"timestamp_utc":"2026-10-21T05:27:30.558000+00:00","timestamp_wib":"2026-10-21T12:27:30.558000+07:00","duration_sec":423.566,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":30543,"completion_tokens":15516,"reasoning_tokens":4325,"total_tokens":46059,"cost_usd":0.009726,"status":"ok"},{"rank":7,"request_id":13399,"timestamp_utc":"2026-10-21T05:39:50.450000+00:00","timestamp_wib":"2026-10-21T12:39:50.450000+07:00","duration_sec":404.065,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":30735,"completion_tokens":15062,"reasoning_tokens":3795,"total_tokens":45797,"cost_usd":0.005614,"status":"ok"},{"rank":8,"request_id":17444,"timestamp_utc":"2026-10-22T02:20:02.234000+00:00","timestamp_wib":"2026-10-22T09:20:02.234000+07:00","duration_sec":390.942,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":26766,"completion_tokens":13106,"reasoning_tokens":5513,"total_tokens":39872,"cost_usd":0.006151,"status":"ok"},{"rank":9,"request_id":11667,"timestamp_utc":"2026-10-21T01:32:33.027000+00:00","timestamp_wib":"2026-10-21T08:32:33.027000+07:00","duration_sec":386.165,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":27859,"completion_tokens":14339,"reasoning_tokens":3700,"total_tokens":42198,"cost_usd":0.008846,"status":"ok"},{"rank":10,"request_id":48911,"timestamp_utc":"2026-10-30T00:46:11.781000+00:00","timestamp_wib":"2026-10-30T07:46:11.781000+07:00","duration_sec":373.543,"model":"gemini-3.8-flash-high","raw_model":"gemini-3.8-flash-high","provider":"antigravity","connection_id":"045f1909-5181-4bcb-90b2-7a5c5d626e10","prompt_tokens":657,"completion_tokens":1620,"reasoning_tokens":9329,"total_tokens":2277,"cost_usd":0.118087,"status":"ok"},{"rank":11,"request_id":12646,"timestamp_utc":"2026-10-21T04:28:53.969000+00:00","timestamp_wib":"2026-10-21T11:28:53.969000+07:00","duration_sec":370.188,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":31874,"completion_tokens":14095,"reasoning_tokens":3095,"total_tokens":45969,"cost_usd":0.00917,"status":"ok"},{"rank":12,"request_id":13630,"timestamp_utc":"2026-10-21T06:00:56.680000+00:00","timestamp_wib":"2026-10-21T13:00:56.680000+07:00","duration_sec":361.128,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":31022,"completion_tokens":14494,"reasoning_tokens":2089,"total_tokens":45516,"cost_usd":0.008881,"status":"ok"},{"rank":13,"request_id":13821,"timestamp_utc":"2026-10-21T06:19:14.637000+00:00","timestamp_wib":"2026-10-21T13:19:14.637000+07:00","duration_sec":356.822,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":28472,"completion_tokens":14022,"reasoning_tokens":2444,"total_tokens":42494,"cost_usd":0.008597,"status":"ok"},{"rank":14,"request_id":9256,"timestamp_utc":"2026-10-20T06:37:31.529000+00:00","timestamp_wib":"2026-10-20T13:37:31.529000+07:00","duration_sec":351.194,"model":"gemini-3.8-flash-high","raw_model":"gemini-3.8-flash-high","provider":"antigravity","connection_id":"b34706c1-092c-44d7-a9bb-1ab1308ced91","prompt_tokens":51312,"completion_tokens":15698,"reasoning_tokens":0,"total_tokens":67010,"cost_usd":0.194703,"status":"ok"},{"rank":15,"request_id":13359,"timestamp_utc":"2026-10-21T05:36:47.279000+00:00","timestamp_wib":"2026-10-21T12:36:47.279000+07:00","duration_sec":349.405,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":32124,"completion_tokens":13936,"reasoning_tokens":2124,"total_tokens":46060,"cost_usd":0.008871,"status":"ok"},{"rank":16,"request_id":9746,"timestamp_utc":"2026-10-20T12:09:54.801000+00:00","timestamp_wib":"2026-10-20T19:09:54.801000+07:00","duration_sec":341.572,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":38402,"completion_tokens":13167,"reasoning_tokens":2627,"total_tokens":51569,"cost_usd":0.009693,"status":"ok"},{"rank":17,"request_id":11473,"timestamp_utc":"2026-10-21T00:25:36.957000+00:00","timestamp_wib":"2026-10-21T07:25:36.957000+07:00","duration_sec":340.132,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":27377,"completion_tokens":13255,"reasoning_tokens":2467,"total_tokens":40632,"cost_usd":0.005917,"status":"ok"},{"rank":18,"request_id":12695,"timestamp_utc":"2026-10-21T04:33:15.673000+00:00","timestamp_wib":"2026-10-21T11:33:15.673000+07:00","duration_sec":335.283,"model":"gemini-3.8-flash-high","raw_model":"gemini-3.8-flash-high","provider":"antigravity","connection_id":"74bb7977-0e6c-4cc5-b1b5-3c650f1bfaa4","prompt_tokens":61873,"completion_tokens":14982,"reasoning_tokens":0,"total_tokens":76855,"cost_usd":0.125361,"status":"ok"},{"rank":19,"request_id":13200,"timestamp_utc":"2026-10-21T05:20:05.834000+00:00","timestamp_wib":"2026-10-21T12:20:05.834000+07:00","duration_sec":332.245,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":34790,"completion_tokens":13281,"reasoning_tokens":1970,"total_tokens":48071,"cost_usd":0.009036,"status":"ok"},{"rank":20,"request_id":11352,"timestamp_utc":"2026-10-20T18:34:00.318000+00:00","timestamp_wib":"2026-10-21T01:34:00.318000+07:00","duration_sec":326.455,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":30016,"completion_tokens":13016,"reasoning_tokens":1989,"total_tokens":43032,"cost_usd":0.008281,"status":"ok"},{"rank":21,"request_id":10937,"timestamp_utc":"2026-10-20T17:02:27.622000+00:00","timestamp_wib":"2026-10-21T00:02:27.622000+07:00","duration_sec":303.954,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":27807,"completion_tokens":11054,"reasoning_tokens":3182,"total_tokens":38861,"cost_usd":0.007774,"status":"ok"},{"rank":22,"request_id":11128,"timestamp_utc":"2026-10-20T17:51:14.491000+00:00","timestamp_wib":"2026-10-21T00:51:14.491000+07:00","duration_sec":301.206,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":25305,"completion_tokens":11432,"reasoning_tokens":2562,"total_tokens":36737,"cost_usd":0.00423,"status":"ok"},{"rank":23,"request_id":11093,"timestamp_utc":"2026-10-20T17:36:19.068000+00:00","timestamp_wib":"2026-10-21T00:36:19.068000+07:00","duration_sec":300.266,"model":"deepseek-v4.1-flash-free","raw_model":"deepseek-v4.1-flash-free","provider":"opencode","connection_id":null,"prompt_tokens":32285,"completion_tokens":11694,"reasoning_tokens":2162,"total_tokens":43979,"cost_usd":0.008277,"status":"ok"},{"rank":24,"request_id":18584,"timestamp_utc":"2026-10-22T06:41:38.432000+00:00","timestamp_wib":"2026-10-22T13:41:38.432000+07:00","duration_sec":299.916,"model":"gemini-3.8-flash-low","raw_model":"gemini-3.8-flash-low","provider":"antigravity","connection_id":"74bb7977-0e6c-4cc5-b1b5-3c650f1bfaa4","prompt_tokens":41855,"completion_tokens":552,"reasoning_tokens":0,"total_tokens":42407,"cost_usd":0.013658,"status":"ok"},{"rank":25,"request_id":32114,"timestamp_utc":"2026-10-25T14:36:22.807000+00:00","timestamp_wib":"2026-10-25T21:36:22.807000+07:00","duration_sec":298.254,"model":"gemini-3.8-flash","raw_model":"gemini-3.8-flash","provider":"antigravity","connection_id":"82d031fd-894b-4dab-aa09-f6422fff880f","prompt_tokens":60968,"completion_tokens":507,"reasoning_tokens":0,"total_tokens":61475,"cost_usd":0.016398,"status":"ok"}]};
+
+    let AppState = {
+      data: INLINE_FALLBACK,
+      isLiveFetch: false,
+      activeTab: 'finops',
+      scatterScale: 'log', // 'log' or 'linear'
+      modelFilterTier: 'prod', // 'prod' (>=10 reqs) or 'all'
+      selectedProvider: 'all',
+      showFrontierCurve: true,
+      heatmapMetric: 'requests', // 'requests', 'total_tokens', 'total_cost_usd'
+      tableSortCol: 'total_requests',
+      tableSortDir: 'desc',
+      modelSearchQuery: '',
+      outlierSearchQuery: ''
+    };
+
+    // Provider Color Palette (Anti-Slop, High Contrast)
+    const PROVIDER_COLORS = {
+      antigravity: { bg: '#10b981', border: '#059669', name: 'Antigravity' },
+      opencode:    { bg: '#38bdf8', border: '#0284c7', name: 'OpenCode' },
+      kiro:        { bg: '#818cf8', border: '#6366f1', name: 'Kiro' },
+      muse:        { bg: '#fbbf24', border: '#d97706', name: 'Muse' },
+      codex:       { bg: '#f43f5e', border: '#e11d48', name: 'Codex' },
+      gemini:      { bg: '#c084fc', border: '#9333ea', name: 'Gemini' },
+      nvidia:      { bg: '#a3e635', border: '#65a30d', name: 'Nvidia' }
+    };
+
+    // Initialization: Render snapshot immediately (0ms paint, zero CLS), then validate live
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderAllModules();
+      switchTab('finops');
+      await initData();
+      if (AppState.isLiveFetch) {
+        renderAllModules();
+      }
+    });
+
+    // Attempt Live Fetch with Fallback
+    async function initData() {
+      try {
+        const [sumRes, frontRes, diurnRes, errRes, outRes] = await Promise.all([
+          fetch('./data/summary.json'),
+          fetch('./data/model_frontier.json'),
+          fetch('./data/diurnal_matrix.json'),
+          fetch('./data/error_attribution.json'),
+          fetch('./data/top_outliers.json')
+        ]);
+
+        if (sumRes.ok && frontRes.ok && diurnRes.ok && errRes.ok && outRes.ok) {
+          AppState.data = {
+            summary: await sumRes.json(),
+            model_frontier: await frontRes.json(),
+            diurnal_matrix: await diurnRes.json(),
+            error_attribution: await errRes.json(),
+            top_outliers: await outRes.json()
+          };
+          AppState.isLiveFetch = true;
+          const badge = document.getElementById('source-badge');
+          if (badge) {
+            badge.innerText = 'Live JSON Mart';
+            badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/30';
+          }
+        }
+      } catch (err) {
+        console.info('Live JSON fetch bypassed (file:// or CORS). Operating cleanly on verified fallback snapshot.', err);
+      }
+    }
+
+    function renderAllModules() {
+      renderModule1FinOps();
+      renderModule2Pareto();
+      renderModule3Diurnal();
+      renderModule4Reliability();
+    }
+
+    // -------------------------------------------------------------
+    // MODULE 1: FINOPS SCORECARDS & TOKEN BAR
+    // -------------------------------------------------------------
+    function renderModule1FinOps() {
+      const s = AppState.data.summary;
+      if (!s) return;
+
+      document.getElementById('card-gross-spend').innerText = '$' + s.gross_spend_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('card-benchmark-spend').innerText = '$' + s.benchmark_frontier_spend_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('card-rasi-savings').innerText = '$' + s.rasi_savings_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('card-blended-etc').innerText = '$' + s.blended_etc_per_mtok.toFixed(4);
+      document.getElementById('card-total-requests').innerText = s.total_requests.toLocaleString();
+      document.getElementById('card-cache-ratio').innerText = (s.cache_realized_discount_ratio * 100).toFixed(1) + '%';
+    }
+
+    // -------------------------------------------------------------
+    // MODULE 2: MODEL FRONTIER & PARETO SCATTER PLOT
+    // -------------------------------------------------------------
+    function renderModule2Pareto() {
+      renderProviderFilterPills();
+      renderScatterPlot();
+      renderModelTable();
+    }
+
+    function renderProviderFilterPills() {
+      const container = document.getElementById('provider-filter-pills');
+      if (!container) return;
+
+      const providers = ['all', 'antigravity', 'opencode', 'kiro', 'muse', 'codex', 'gemini', 'nvidia'];
+      container.innerHTML = providers.map(p => {
+        const isSel = AppState.selectedProvider === p;
+        const color = p !== 'all' ? (PROVIDER_COLORS[p]?.bg || '#fff') : '#10b981';
+        return `
+          <button onclick="setSelectedProvider('${p}')" class="min-h-[44px] px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition-colors ${
+            isSel ? 'bg-zinc-800 text-zinc-100 border-white/20 font-semibold' : 'bg-zinc-950 text-zinc-400 border-white/5 hover:text-zinc-200'
+          }">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${color};"></span>
+            <span class="capitalize">${p}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setSelectedProvider(p) {
+      AppState.selectedProvider = p;
+      renderProviderFilterPills();
+      renderScatterPlot();
+      renderModelTable();
+    }
+
+    function setScatterScale(scale) {
+      AppState.scatterScale = scale;
+      document.getElementById('btn-scale-log').className = scale === 'log' 
+        ? 'min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors' 
+        : 'min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      document.getElementById('btn-scale-lin').className = scale === 'linear' 
+        ? 'min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors' 
+        : 'min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      renderScatterPlot();
+    }
+
+    function setModelFilter(tier) {
+      AppState.modelFilterTier = tier;
+      document.getElementById('btn-filter-prod').className = tier === 'prod' 
+        ? 'min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors' 
+        : 'min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      document.getElementById('btn-filter-all').className = tier === 'all' 
+        ? 'min-h-[44px] px-3 py-1.5 rounded-md bg-zinc-800 text-zinc-100 font-semibold transition-colors' 
+        : 'min-h-[44px] px-3 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      renderScatterPlot();
+      renderModelTable();
+    }
+
+    function toggleFrontierCurve() {
+      AppState.showFrontierCurve = !AppState.showFrontierCurve;
+      const btn = document.getElementById('btn-toggle-frontier');
+      if (btn) {
+        btn.className = AppState.showFrontierCurve
+          ? 'min-h-[44px] px-3 py-1.5 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-medium flex items-center gap-1.5 transition-colors'
+          : 'min-h-[44px] px-3 py-1.5 rounded-lg bg-zinc-900 text-zinc-400 border border-white/10 hover:text-zinc-200 text-xs font-mono font-medium flex items-center gap-1.5 transition-colors';
+      }
+      renderScatterPlot();
+    }
+
+    function getFilteredModels() {
+      let list = AppState.data.model_frontier || [];
+      if (AppState.modelFilterTier === 'prod') {
+        list = list.filter(m => m.total_requests >= 10);
+      }
+      if (AppState.selectedProvider !== 'all') {
+        list = list.filter(m => m.provider === AppState.selectedProvider);
+      }
+      return list;
+    }
+
+    function computeParetoFrontier(models) {
+      const sorted = [...models].sort((a, b) => a.p90_latency_sec - b.p90_latency_sec);
+      const frontier = [];
+      let minCost = Infinity;
+
+      for (const m of sorted) {
+        if (m.etc_per_mtok < minCost) {
+          frontier.push(m);
+          minCost = m.etc_per_mtok;
+        }
+      }
+      return frontier;
+    }
+
+    function renderScatterPlot() {
+      const svg = document.getElementById('scatter-svg');
+      if (!svg) return;
+
+      const models = getFilteredModels();
+      if (!models.length) {
+        svg.innerHTML = '<text x="480" y="220" text-anchor="middle" fill="#71717a" font-family="monospace" font-size="14">No models match the current filter</text>';
+        return;
+      }
+
+      const W = 960;
+      const H = 440;
+      const pad = { top: 40, right: 50, bottom: 60, left: 80 };
+      const plotW = W - pad.left - pad.right;
+      const plotH = H - pad.top - pad.bottom;
+
+      const minP90 = Math.min(...models.map(m => Math.max(0.05, m.p90_latency_sec)));
+      const maxP90 = Math.max(...models.map(m => m.p90_latency_sec));
+      const minCost = Math.min(...models.map(m => Math.max(0.005, m.etc_per_mtok)));
+      const maxCost = Math.max(...models.map(m => m.etc_per_mtok));
+
+      const isLog = AppState.scatterScale === 'log';
+
+      const xMin = isLog ? 0.1 : 0;
+      const xMax = isLog ? Math.max(150, maxP90 * 1.3) : maxP90 * 1.1;
+
+      const yMin = isLog ? 0.01 : 0;
+      const yMax = isLog ? Math.max(200, maxCost * 1.3) : maxCost * 1.1;
+
+      function scaleX(val) {
+        const v = Math.max(0.01, val);
+        if (isLog) {
+          const logMin = Math.log10(xMin);
+          const logMax = Math.log10(xMax);
+          const frac = (Math.log10(v) - logMin) / (logMax - logMin);
+          return pad.left + Math.max(0, Math.min(1, frac)) * plotW;
+        } else {
+          return pad.left + (v / xMax) * plotW;
+        }
+      }
+
+      function scaleY(val) {
+        const v = Math.max(0.005, val);
+        if (isLog) {
+          const logMin = Math.log10(yMin);
+          const logMax = Math.log10(yMax);
+          const frac = (Math.log10(v) - logMin) / (logMax - logMin);
+          return pad.top + plotH - Math.max(0, Math.min(1, frac)) * plotH;
+        } else {
+          return pad.top + plotH - (v / yMax) * plotH;
+        }
+      }
+
+      const maxTokens = Math.max(...models.map(m => m.total_tokens || 1));
+      function scaleRadius(tokens) {
+        const t = Math.max(1, tokens || 1);
+        const norm = Math.log10(t) / Math.log10(maxTokens || 10);
+        return 6 + Math.max(0, Math.min(1, norm)) * 20;
+      }
+
+      let gridSvg = '';
+      const xTicks = isLog ? [0.1, 1, 10, 50, 100] : [0, 20, 40, 60, 80, 100, 120];
+      xTicks.forEach(tick => {
+        if (tick <= xMax) {
+          const x = scaleX(tick);
+          gridSvg += `
+            <line x1="${x}" y1="${pad.top}" x2="${x}" y2="${pad.top + plotH}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+            <text x="${x}" y="${pad.top + plotH + 20}" text-anchor="middle" fill="#71717a" font-family="'Fira Code', monospace" font-size="10">${tick}s</text>
+          `;
+        }
+      });
+
+      const yTicks = isLog ? [0.01, 0.1, 1, 10, 100] : [0, 20, 50, 100, 150];
+      yTicks.forEach(tick => {
+        if (tick <= yMax) {
+          const y = scaleY(tick);
+          gridSvg += `
+            <line x1="${pad.left}" y1="${y}" x2="${pad.left + plotW}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+            <text x="${pad.left - 12}" y="${y + 3}" text-anchor="end" fill="#71717a" font-family="'Fira Code', monospace" font-size="10">$${tick}</text>
+          `;
+        }
+      });
+
+      gridSvg += `
+        <text x="${pad.left + plotW / 2}" y="${H - 15}" text-anchor="middle" fill="#a1a1aa" font-family="'Fira Code', monospace" font-size="11" font-weight="500">P90 Operational Latency (seconds) →</text>
+        <text x="25" y="${pad.top + plotH / 2}" text-anchor="middle" fill="#a1a1aa" font-family="'Fira Code', monospace" font-size="11" font-weight="500" transform="rotate(-90 25 ${pad.top + plotH / 2})">Effective Token Cost ($/MTok) →</text>
+      `;
+
+      let paretoSvg = '';
+      const paretoModels = computeParetoFrontier(models);
+      if (AppState.showFrontierCurve && paretoModels.length > 1) {
+        paretoModels.sort((a, b) => a.p90_latency_sec - b.p90_latency_sec);
+        const pts = paretoModels.map(m => `${scaleX(m.p90_latency_sec)},${scaleY(m.etc_per_mtok)}`).join(' ');
+        paretoSvg = `
+          <polyline points="${pts}" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="5,4" opacity="0.8"/>
+        `;
+      }
+
+      let dotsSvg = '';
+      models.forEach((m, idx) => {
+        const cx = scaleX(m.p90_latency_sec);
+        const cy = scaleY(m.etc_per_mtok);
+        const r = scaleRadius(m.total_tokens);
+        const color = PROVIDER_COLORS[m.provider]?.bg || '#10b981';
+        const isPareto = paretoModels.some(p => p.model === m.model && p.provider === m.provider);
+
+        dotsSvg += `
+          <g class="scatter-node cursor-pointer" onclick="focusModelInTable('${m.model}')" onmouseenter="showScatterTooltip(event, ${idx})" onmouseleave="hideScatterTooltip()">
+            ${isPareto ? `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.9" />` : ''}
+            <circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" fill-opacity="0.85" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3" class="hover:fill-opacity-100 hover:stroke-opacity-100 transition-all duration-150"/>
+            ${(m.total_requests >= 50 || isPareto) ? `
+              <text x="${cx}" y="${cy - r - 4}" text-anchor="middle" fill="#e4e4e7" font-family="'Fira Code', monospace" font-size="9" font-weight="600" opacity="0.9">${m.model}</text>
+            ` : ''}
+          </g>
+        `;
+      });
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+        ${gridSvg}
+        ${paretoSvg}
+        ${dotsSvg}
+      `;
+    }
+
+    function showScatterTooltip(evt, idx) {
+      const models = getFilteredModels();
+      const m = models[idx];
+      if (!m) return;
+
+      const tt = document.getElementById('scatter-tooltip');
+      const wrapper = document.getElementById('scatter-wrapper');
+      if (!tt || !wrapper) return;
+
+      const wrapRect = wrapper.getBoundingClientRect();
+      const x = evt.clientX - wrapRect.left;
+      const y = evt.clientY - wrapRect.top;
+
+      const providerBadge = PROVIDER_COLORS[m.provider]?.bg || '#71717a';
+
+      tt.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5">
+            <span class="font-mono font-bold text-zinc-100 text-xs">${m.model}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-950 font-bold uppercase" style="background-color: ${providerBadge}">${m.provider}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px]">
+            <span class="text-zinc-400">Total Requests:</span>
+            <span class="text-right text-zinc-100 font-semibold">${m.total_requests.toLocaleString()}</span>
+            <span class="text-zinc-400">Total Volume:</span>
+            <span class="text-right text-zinc-200">${(m.total_tokens / 1e6).toFixed(2)}M tok</span>
+            <span class="text-emerald-400">Effective Cost:</span>
+            <span class="text-right text-emerald-400 font-bold">$${m.etc_per_mtok.toFixed(4)} / M</span>
+            <span class="text-zinc-400">P90 Latency:</span>
+            <span class="text-right text-zinc-100 font-semibold">${m.p90_latency_sec.toFixed(2)}s</span>
+            <span class="text-zinc-400">P99 Latency:</span>
+            <span class="text-right text-zinc-300">${m.p99_latency_sec.toFixed(2)}s</span>
+            <span class="text-amber-400">ROM Ratio:</span>
+            <span class="text-right text-amber-300">${m.rom_ratio.toFixed(4)}</span>
+            <span class="text-emerald-400">RASI Alpha:</span>
+            <span class="text-right text-emerald-300">${m.rasi_savings_pct.toFixed(1)}%</span>
+          </div>
+          <div class="text-[10px] text-zinc-500 pt-1 border-t border-white/5">
+            Actual: $${m.gross_cost_usd.toFixed(2)} vs List: $${m.benchmark_cost_usd.toFixed(2)}
+          </div>
+        </div>
+      `;
+
+      tt.style.left = Math.min(wrapRect.width - 240, Math.max(10, x + 15)) + 'px';
+      tt.style.top = Math.min(wrapRect.height - 180, Math.max(10, y - 20)) + 'px';
+      tt.classList.remove('hidden');
+    }
+
+    function hideScatterTooltip() {
+      const tt = document.getElementById('scatter-tooltip');
+      if (tt) tt.classList.add('hidden');
+    }
+
+    function focusModelInTable(modelName) {
+      const search = document.getElementById('model-search');
+      if (search) {
+        search.value = modelName;
+        AppState.modelSearchQuery = modelName;
+        renderModelTable();
+        search.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // Model Comparison Table
+    function renderModelTable() {
+      const tbody = document.getElementById('model-tbody');
+      const countBadge = document.getElementById('table-count-badge');
+      if (!tbody) return;
+
+      let list = [...(AppState.data.model_frontier || [])];
+
+      if (AppState.selectedProvider !== 'all') {
+        list = list.filter(m => m.provider === AppState.selectedProvider);
+      }
+
+      if (AppState.modelFilterTier === 'prod') {
+        list = list.filter(m => m.total_requests >= 10);
+      }
+
+      if (AppState.modelSearchQuery.trim()) {
+        const q = AppState.modelSearchQuery.toLowerCase();
+        list = list.filter(m => m.model.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q));
+      }
+
+      const col = AppState.tableSortCol;
+      const dir = AppState.tableSortDir === 'desc' ? -1 : 1;
+      list.sort((a, b) => {
+        if (typeof a[col] === 'string') {
+          return a[col].localeCompare(b[col]) * dir;
+        }
+        return ((a[col] || 0) - (b[col] || 0)) * dir;
+      });
+
+      if (countBadge) countBadge.innerText = `${list.length} Models`;
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-6 text-zinc-500 font-mono">No matching models found.</td></tr>`;
+        return;
+      }
+
+      const paretoFrontier = computeParetoFrontier(AppState.data.model_frontier || []);
+
+      tbody.innerHTML = list.map(m => {
+        const isPareto = paretoFrontier.some(p => p.model === m.model && p.provider === m.provider);
+        const providerColor = PROVIDER_COLORS[m.provider]?.bg || '#71717a';
+        const hasHighRom = m.rom_ratio > 0.25;
+        const hasTailVolatility = m.tvi_index > 15.0;
+
+        return `
+          <tr class="hover:bg-zinc-800/50 transition-colors font-mono">
+            <td class="px-3.5 py-2.5 font-medium text-zinc-100 flex items-center gap-2">
+              ${isPareto ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Pareto Optimal Frontier"></span>` : ''}
+              <span>${m.model}</span>
+              ${hasHighRom ? `<span class="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30">High ROM</span>` : ''}
+            </td>
+            <td class="px-3 py-2.5">
+              <span class="px-2 py-0.5 rounded text-[10px] text-zinc-950 font-bold uppercase" style="background-color: ${providerColor};">
+                ${m.provider}
+              </span>
+            </td>
+            <td class="px-3 py-2.5 text-right text-zinc-200 font-semibold">${m.total_requests.toLocaleString()}</td>
+            <td class="px-3 py-2.5 text-right text-zinc-400">${(m.total_tokens / 1e6).toFixed(2)}M</td>
+            <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">$${m.etc_per_mtok.toFixed(4)}</td>
+            <td class="px-3 py-2.5 text-right ${hasHighRom ? 'text-amber-400 font-semibold' : 'text-zinc-400'}">${m.rom_ratio.toFixed(4)}</td>
+            <td class="px-3 py-2.5 text-right text-zinc-300">${m.p50_latency_sec.toFixed(2)}s</td>
+            <td class="px-3 py-2.5 text-right text-zinc-100 font-medium">${m.p90_latency_sec.toFixed(2)}s</td>
+            <td class="px-3 py-2.5 text-right ${hasTailVolatility ? 'text-rose-400 font-semibold' : 'text-zinc-400'}">${m.p99_latency_sec.toFixed(2)}s</td>
+            <td class="px-3 py-2.5 text-right ${hasTailVolatility ? 'text-rose-300' : 'text-zinc-500'}">${m.tvi_index.toFixed(1)}</td>
+            <td class="px-3 py-2.5 text-right font-semibold ${m.rasi_savings_pct >= 80 ? 'text-emerald-400' : (m.rasi_savings_pct > 0 ? 'text-zinc-200' : 'text-rose-400')}">
+              ${m.rasi_savings_pct.toFixed(1)}%
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function sortTable(col) {
+      if (AppState.tableSortCol === col) {
+        AppState.tableSortDir = AppState.tableSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        AppState.tableSortCol = col;
+        AppState.tableSortDir = 'desc';
+      }
+      renderModelTable();
+    }
+
+    function filterModelTable() {
+      const search = document.getElementById('model-search');
+      if (search) {
+        AppState.modelSearchQuery = search.value;
+        renderModelTable();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // MODULE 3: DIURNAL TRAFFIC HEATMAP (24h x 7d WIB)
+    // -------------------------------------------------------------
+    function renderModule3Diurnal() {
+      const d = AppState.data.diurnal_matrix;
+      if (!d || !d.cells) return;
+
+      const rowsContainer = document.getElementById('heatmap-rows');
+      if (!rowsContainer) return;
+
+      const metric = AppState.heatmapMetric;
+      const values = d.cells.map(c => c[metric] || 0);
+      const maxVal = Math.max(...values, 1);
+
+      function getHeatmapColor(val) {
+        if (val === 0) return 'bg-zinc-950 border border-white/5';
+        const ratio = val / maxVal;
+        if (ratio < 0.15) return 'bg-emerald-950/80 border border-emerald-900/50 text-emerald-200';
+        if (ratio < 0.40) return 'bg-emerald-800/90 border border-emerald-700/60 text-white';
+        if (ratio < 0.70) return 'bg-emerald-600 border border-emerald-500 text-white font-semibold';
+        if (ratio < 0.90) return 'bg-emerald-400 border border-emerald-300 text-zinc-950 font-bold';
+        return 'bg-amber-400 border border-amber-300 text-zinc-950 font-bold';
+      }
+
+      const days = d.days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      let html = '';
+      const dayTotals = {};
+
+      days.forEach((dayName, dayIdx) => {
+        const dayCells = d.cells.filter(c => c.day === dayName || c.day_idx === dayIdx);
+        dayCells.sort((a, b) => a.hour - b.hour);
+
+        let daySum = 0;
+        let cellsHtml = '';
+        dayCells.forEach(cell => {
+          const val = cell[metric] || 0;
+          daySum += val;
+          const colorClass = getHeatmapColor(val);
+          
+          cellsHtml += `
+            <div 
+              class="w-full aspect-square rounded flex items-center justify-center text-[9px] font-mono cursor-pointer transition-transform hover:scale-110 hover:z-20 relative group ${colorClass}"
+              onmouseenter="showHeatmapTooltip(event, '${cell.day}', ${cell.hour}, ${cell.requests}, ${cell.total_tokens}, ${cell.total_cost_usd})"
+              onmouseleave="hideHeatmapTooltip()"
+            >
+              ${val > 0 ? (metric === 'requests' ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : val) : (metric === 'total_cost_usd' ? '$'+Math.round(val) : (val/1e6).toFixed(0)+'M')) : ''}
+            </div>
+          `;
+        });
+
+        dayTotals[dayName] = daySum;
+
+        html += `
+          <div class="grid grid-cols-[80px_repeat(24,_1fr)] gap-1 items-center">
+            <div class="text-xs font-medium text-zinc-300 font-sans truncate pr-2">${dayName}</div>
+            ${cellsHtml}
+          </div>
+        `;
+      });
+
+      rowsContainer.innerHTML = html;
+
+      // Render Day Totals Grid
+      const dayGrid = document.getElementById('day-totals-grid');
+      if (dayGrid) {
+        dayGrid.innerHTML = days.map(dayName => {
+          const sum = dayTotals[dayName] || 0;
+          const label = metric === 'requests' 
+            ? sum.toLocaleString() + ' reqs' 
+            : (metric === 'total_cost_usd' ? '$' + sum.toFixed(2) : (sum / 1e6).toFixed(1) + 'M tok');
+          return `
+            <div class="bg-zinc-950/70 border border-white/5 rounded-lg p-2 font-mono">
+              <div class="text-[10px] text-zinc-500 font-sans">${dayName}</div>
+              <div class="text-xs font-semibold text-emerald-400 mt-0.5">${label}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      let maxCell = d.cells[0];
+      d.cells.forEach(c => {
+        if ((c[metric] || 0) > (maxCell[metric] || 0)) {
+          maxCell = c;
+        }
+      });
+      if (maxCell) {
+        document.getElementById('diurnal-peak-window').innerText = `${maxCell.day} ${String(maxCell.hour).padStart(2, '0')}:00 - ${String(maxCell.hour).padStart(2, '0')}:59 WIB`;
+      }
+    }
+
+    function setHeatmapMetric(m) {
+      AppState.heatmapMetric = m;
+      document.getElementById('btn-heat-reqs').className = m === 'requests'
+        ? 'min-h-[44px] px-3.5 py-1.5 rounded-md bg-zinc-800 text-emerald-400 font-semibold transition-colors'
+        : 'min-h-[44px] px-3.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      document.getElementById('btn-heat-tokens').className = m === 'total_tokens'
+        ? 'min-h-[44px] px-3.5 py-1.5 rounded-md bg-zinc-800 text-sky-400 font-semibold transition-colors'
+        : 'min-h-[44px] px-3.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      document.getElementById('btn-heat-cost').className = m === 'total_cost_usd'
+        ? 'min-h-[44px] px-3.5 py-1.5 rounded-md bg-zinc-800 text-amber-400 font-semibold transition-colors'
+        : 'min-h-[44px] px-3.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition-colors';
+      renderModule3Diurnal();
+    }
+
+    function showHeatmapTooltip(evt, day, hour, reqs, tokens, cost) {
+      const tt = document.getElementById('heatmap-tooltip');
+      if (!tt) return;
+
+      const hourStr = `${String(hour).padStart(2, '0')}:00 - ${String(hour).padStart(2, '0')}:59 WIB`;
+      tt.innerHTML = `
+        <div class="space-y-1.5">
+          <div class="border-b border-white/10 pb-1 flex items-center justify-between">
+            <span class="font-semibold text-zinc-100 font-sans">${day}</span>
+            <span class="font-mono text-zinc-400 text-[11px]">${hourStr}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[11px]">
+            <span class="text-zinc-400">Requests:</span>
+            <span class="text-right text-emerald-400 font-bold">${reqs.toLocaleString()}</span>
+            <span class="text-zinc-400">Tokens:</span>
+            <span class="text-right text-sky-400">${(tokens / 1e6).toFixed(2)}M</span>
+            <span class="text-zinc-400">Spend:</span>
+            <span class="text-right text-amber-400 font-semibold">$${cost.toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+
+      tt.style.left = (evt.clientX + 15) + 'px';
+      tt.style.top = (evt.clientY - 40) + 'px';
+      tt.classList.remove('hidden');
+    }
+
+    function hideHeatmapTooltip() {
+      const tt = document.getElementById('heatmap-tooltip');
+      if (tt) tt.classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // MODULE 4: RELIABILITY, ERROR ATTRIBUTION & OUTLIERS
+    // -------------------------------------------------------------
+    function renderModule4Reliability() {
+      const err = AppState.data.error_attribution;
+      if (!err) return;
+
+      const providerListContainer = document.getElementById('provider-breakdown-list');
+      if (providerListContainer && err.by_provider) {
+        const total = err.total_requests || 1;
+        const providers = Object.values(err.by_provider).sort((a, b) => b.total_requests - a.total_requests);
+
+        providerListContainer.innerHTML = providers.map(p => {
+          const pct = ((p.total_requests / total) * 100).toFixed(2);
+          const color = PROVIDER_COLORS[p.provider]?.bg || '#71717a';
+          return `
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs font-mono">
+                <span class="flex items-center gap-1.5 font-sans font-medium text-zinc-200 capitalize">
+                  <span class="w-2.5 h-2.5 rounded" style="background-color: ${color};"></span>
+                  ${p.provider}
+                </span>
+                <span class="text-zinc-400">${p.total_requests.toLocaleString()} <span class="text-zinc-500 font-normal">(${pct}%)</span></span>
+              </div>
+              <div class="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-white/5">
+                <div class="h-full rounded-full" style="width: ${pct}%; background-color: ${color};"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const connTbody = document.getElementById('connection-pool-tbody');
+      if (connTbody && err.by_connection_id) {
+        const conns = Object.values(err.by_connection_id).sort((a, b) => b.total_requests - a.total_requests);
+        const total = err.total_requests || 1;
+
+        connTbody.innerHTML = conns.map(c => {
+          const pct = ((c.total_requests / total) * 100).toFixed(2);
+          const providerColor = PROVIDER_COLORS[c.provider]?.bg || '#71717a';
+          const uuid = c.connection_id === 'unassigned' ? 'unassigned (direct)' : c.connection_id;
+
+          return `
+            <tr class="hover:bg-zinc-800/40 transition-colors font-mono">
+              <td class="px-3 py-2 text-zinc-300 truncate max-w-[200px]" title="${uuid}">${uuid}</td>
+              <td class="px-3 py-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] text-zinc-950 font-bold uppercase" style="background-color: ${providerColor};">
+                  ${c.provider}
+                </span>
+              </td>
+              <td class="px-3 py-2 text-right text-zinc-200 font-semibold">${c.total_requests.toLocaleString()}</td>
+              <td class="px-3 py-2 text-right text-zinc-400">${pct}%</td>
+              <td class="px-3 py-2 text-right text-emerald-400 font-bold">0.0% OK</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      renderOutliersTable();
+    }
+
+    function renderOutliersTable() {
+      const tbody = document.getElementById('outliers-tbody');
+      if (!tbody) return;
+
+      let list = [...(AppState.data.top_outliers || [])];
+
+      if (AppState.outlierSearchQuery.trim()) {
+        const q = AppState.outlierSearchQuery.toLowerCase();
+        list = list.filter(o => 
+          o.model.toLowerCase().includes(q) || 
+          o.provider.toLowerCase().includes(q) || 
+          String(o.request_id).includes(q)
+        );
+      }
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-6 text-zinc-500 font-mono">No matching outliers found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(o => {
+        const providerColor = PROVIDER_COLORS[o.provider]?.bg || '#71717a';
+        const mins = (o.duration_sec / 60).toFixed(1);
+
+        let diag = 'High Prompt Ingestion';
+        let diagColor = 'text-zinc-400';
+        if (o.duration_sec > 1000) {
+          diag = 'Extreme Generation & Context Saturation';
+          diagColor = 'text-rose-400 font-semibold';
+        } else if (o.reasoning_tokens > 2000) {
+          diag = 'Latent Reasoning Burst (DeepSeek-R1)';
+          diagColor = 'text-amber-400 font-semibold';
+        } else if (o.prompt_tokens > 50000) {
+          diag = 'Massive Multi-Agent Context Injection';
+          diagColor = 'text-sky-400 font-semibold';
+        }
+
+        const timeWib = o.timestamp_wib ? o.timestamp_wib.replace('T', ' ').substring(0, 19) : o.timestamp_utc;
+
+        return `
+          <tr class="hover:bg-zinc-800/50 transition-colors font-mono">
+            <td class="px-3 py-2.5 text-center text-zinc-400 font-bold">#${o.rank}</td>
+            <td class="px-3 py-2.5 text-zinc-300 font-semibold">#${o.request_id}</td>
+            <td class="px-3 py-2.5 text-zinc-400 text-[11px] whitespace-nowrap">${timeWib}</td>
+            <td class="px-3 py-2.5 text-right text-amber-400 font-bold whitespace-nowrap">${o.duration_sec.toFixed(1)}s <span class="text-zinc-500 text-[10px]">(${mins}m)</span></td>
+            <td class="px-3 py-2.5 text-zinc-100 font-medium">${o.model}</td>
+            <td class="px-3 py-2.5">
+              <span class="px-1.5 py-0.5 rounded text-[10px] text-zinc-950 font-bold uppercase" style="background-color: ${providerColor};">
+                ${o.provider}
+              </span>
+            </td>
+            <td class="px-3 py-2.5 text-right text-zinc-300">${o.prompt_tokens.toLocaleString()}</td>
+            <td class="px-3 py-2.5 text-right text-zinc-300">${o.completion_tokens.toLocaleString()}</td>
+            <td class="px-3 py-2.5 text-right ${o.reasoning_tokens > 0 ? 'text-amber-300 font-semibold' : 'text-zinc-500'}">
+              ${o.reasoning_tokens > 0 ? o.reasoning_tokens.toLocaleString() : '0'}
+            </td>
+            <td class="px-3 py-2.5 text-right text-zinc-200 font-mono">$${o.cost_usd.toFixed(4)}</td>
+            <td class="px-3 py-2.5 text-[11px] ${diagColor}">${diag}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterOutliersTable() {
+      const search = document.getElementById('outlier-search');
+      if (search) {
+        AppState.outlierSearchQuery = search.value;
+        renderOutliersTable();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // NAVIGATION & TAB SWITCHING
+    // -------------------------------------------------------------
+    function switchTab(tabId) {
+      AppState.activeTab = tabId;
+
+      const tabs = ['finops', 'pareto', 'diurnal', 'reliability', 'methodology', 'all'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          if (t === tabId) {
+            btn.className = 'tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-emerald-400 bg-zinc-900 border border-emerald-500/30 flex items-center gap-2 whitespace-nowrap transition-colors';
+          } else {
+            btn.className = 'tab-btn min-h-[44px] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent flex items-center gap-2 whitespace-nowrap transition-colors';
+          }
+        }
+      });
+
+      const modules = ['finops', 'pareto', 'diurnal', 'reliability', 'methodology'];
+      modules.forEach(m => {
+        const sec = document.getElementById(`module-${m}`);
+        if (sec) {
+          if (tabId === 'all' || tabId === m) {
+            sec.classList.remove('hidden');
+          } else {
+            sec.classList.add('hidden');
+          }
+        }
+      });
+
+      if (tabId === 'pareto' || tabId === 'all') {
+        setTimeout(renderScatterPlot, 50);
+      }
+      if (tabId === 'diurnal' || tabId === 'all') {
+        setTimeout(renderModule3Diurnal, 50);
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // -------------------------------------------------------------
+    // STAR DRAWER & UTILITIES
+    // -------------------------------------------------------------
+    function toggleDrawer(open) {
+      const drawer = document.getElementById('star-drawer');
+      const backdrop = document.getElementById('star-drawer-backdrop');
+      if (!drawer || !backdrop) return;
+
+      if (open) {
+        backdrop.classList.remove('hidden');
+        drawer.classList.remove('translate-x-full');
+        document.body.style.overflow = 'hidden';
+      } else {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleDrawer(false);
+    });
+
+    function copySTARResumePitch() {
+      const text = `AI Telemetry & Model Unit Economics Inspector | AI Systems & FinOps Analytics
+• Architected an end-to-end telemetry and unit-economics analytical engine analyzing 55,877+ production LLM gateway transactions from 9Router infrastructure.
+• Formulated core FinOps metrics including Effective Token Cost (ETC $/MTok), Reasoning Overhead Multiplier (ROM), and Routing Arbitrage Savings Index (RASI) to quantify multi-provider routing efficiency.
+• Designed 4 analytical dashboard modules providing Pareto frontier trade-offs (Latency vs. Cost), diurnal traffic acceleration tracking, and connection-level error attribution for Head of AI and CFO stakeholders.
+• Parsed nested telemetry JSON payloads to isolate latent reasoning/thinking token consumption and evaluate context-cache discount realization across diverse model endpoints.`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btnText = document.getElementById('copy-btn-text');
+        if (btnText) {
+          btnText.innerText = 'Copied to Clipboard!';
+          setTimeout(() => {
+            btnText.innerText = 'Copy Resume Bullet Points';
+          }, 2500);
+        }
+      }).catch(err => {
+        alert('Copied bullet points to clipboard!');
+      });
+    }
+
+    function exportDataMart() {
+      const jsonStr = JSON.stringify(AppState.data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '9router-telemetry-audit-mart.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

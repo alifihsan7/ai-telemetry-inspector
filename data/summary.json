@@ -1,0 +1,21 @@
+{
+  "total_requests": 55877,
+  "gross_spend_usd": 1236.5703,
+  "benchmark_frontier_spend_usd": 10610.1599,
+  "rasi_savings_usd": 9373.5896,
+  "rasi_savings_pct": 88.35,
+  "blended_etc_per_mtok": 0.3624,
+  "total_tokens": 3411937705,
+  "prompt_tokens": 3380742138,
+  "completion_tokens": 31195567,
+  "cached_tokens": 3027818918,
+  "reasoning_tokens": 2734303,
+  "visible_completion_tokens": 28461264,
+  "fleet_rom_ratio": 0.0961,
+  "avg_rom_per_request": 0.0515,
+  "cache_realized_discount_ratio": 0.8835,
+  "total_errors": 0,
+  "error_rate_pct": 0.0,
+  "status_ok_rate_pct": 100.0,
+  "generated_at_utc": "2026-11-02T10:41:43.847093+00:00"
+}
